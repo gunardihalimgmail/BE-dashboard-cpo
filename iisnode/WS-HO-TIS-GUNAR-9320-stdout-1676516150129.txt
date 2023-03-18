@@ -1,0 +1,10 @@
+13
+[ [ 10, 30 ], [ 50, 70 ], [ 90 ] ]
+Just Running once in lodash
+D:\MyProject\NodeJS
+D:\MyProject\NodeJS\server.js
+listening for requests on port 3002 
+/  ->  GET
+/favicon.ico  ->  GET
+/  ->  GET
+/favicon.ico  ->  GET

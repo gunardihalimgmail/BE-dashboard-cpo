@@ -1,0 +1,87 @@
+<html>
+<head>
+    <title>iisnode logs</title>
+    <style type="text/css">
+        body
+        {
+            font-family: "Trebuchet MS" , Arial, Helvetica, sans-serif;
+        }
+        table
+        {
+            border-collapse: collapse;
+        }
+        td, th
+        {
+            border: 1px solid lightgray;
+            padding: 3px 7px 2px 7px;
+        }
+        th
+        {
+            text-align: left;
+            padding-top: 5px;
+            padding-bottom: 4px;
+            background-color: Gray;
+            color: #ffffff;
+        }
+        td.stderr
+        {
+            color: Red;
+        }
+    </style>
+</head>
+<body>
+    <table id="logFilesTable">
+        <tr>
+            <th>
+                Computer name
+            </th>
+            <th>
+                PID
+            </th>
+            <th>
+                Type
+            </th>
+            <th>
+                Created
+            </th>
+            <th>
+                Link
+            </th>
+        </tr>
+    </table>
+    <p id="lastUpdated"></p>
+    <script type="text/javascript">
+
+        // this is replaced with actual data at runtime by code in interceptor.js
+        var logFiles = [{"file":"WS-HO-TIS-GUNAR-10168-stderr-1676516119622.txt","computername":"WS-HO-TIS-GUNAR","pid":10168,"type":"stderr","created":1676516119622},{"file":"WS-HO-TIS-GUNAR-10372-stderr-1676516120981.txt","computername":"WS-HO-TIS-GUNAR","pid":10372,"type":"stderr","created":1676516120981},{"file":"WS-HO-TIS-GUNAR-10448-stderr-1676516121507.txt","computername":"WS-HO-TIS-GUNAR","pid":10448,"type":"stderr","created":1676516121507},{"file":"WS-HO-TIS-GUNAR-11716-stderr-1676516121952.txt","computername":"WS-HO-TIS-GUNAR","pid":11716,"type":"stderr","created":1676516121952},{"file":"WS-HO-TIS-GUNAR-1212-stderr-1676516519443.txt","computername":"WS-HO-TIS-GUNAR","pid":1212,"type":"stderr","created":1676516519443},{"file":"WS-HO-TIS-GUNAR-1304-stderr-1676516519136.txt","computername":"WS-HO-TIS-GUNAR","pid":1304,"type":"stderr","created":1676516519136},{"file":"WS-HO-TIS-GUNAR-1384-stderr-1676516120759.txt","computername":"WS-HO-TIS-GUNAR","pid":1384,"type":"stderr","created":1676516120759},{"file":"WS-HO-TIS-GUNAR-256-stderr-1676516216282.txt","computername":"WS-HO-TIS-GUNAR","pid":256,"type":"stderr","created":1676516216282},{"file":"WS-HO-TIS-GUNAR-4856-stderr-1676516285605.txt","computername":"WS-HO-TIS-GUNAR","pid":4856,"type":"stderr","created":1676516285605},{"file":"WS-HO-TIS-GUNAR-6172-stderr-1676516308597.txt","computername":"WS-HO-TIS-GUNAR","pid":6172,"type":"stderr","created":1676516308597},{"file":"WS-HO-TIS-GUNAR-6188-stderr-1676516119358.txt","computername":"WS-HO-TIS-GUNAR","pid":6188,"type":"stderr","created":1676516119358},{"file":"WS-HO-TIS-GUNAR-7140-stderr-1676516120487.txt","computername":"WS-HO-TIS-GUNAR","pid":7140,"type":"stderr","created":1676516120487},{"file":"WS-HO-TIS-GUNAR-8088-stderr-1676516284020.txt","computername":"WS-HO-TIS-GUNAR","pid":8088,"type":"stderr","created":1676516284020},{"file":"WS-HO-TIS-GUNAR-8356-stderr-1676517464702.txt","computername":"WS-HO-TIS-GUNAR","pid":8356,"type":"stderr","created":1676517464702},{"file":"WS-HO-TIS-GUNAR-8356-stdout-1676517464700.txt","computername":"WS-HO-TIS-GUNAR","pid":8356,"type":"stdout","created":1676517464700},{"file":"WS-HO-TIS-GUNAR-9320-stderr-1676516150130.txt","computername":"WS-HO-TIS-GUNAR","pid":9320,"type":"stderr","created":1676516150130},{"file":"WS-HO-TIS-GUNAR-9320-stdout-1676516150129.txt","computername":"WS-HO-TIS-GUNAR","pid":9320,"type":"stdout","created":1676516150129},{"file":"WS-HO-TIS-GUNAR-9672-stderr-1676516286982.txt","computername":"WS-HO-TIS-GUNAR","pid":9672,"type":"stderr","created":1676516286982}];
+        var lastUpdated = 1676517464749;
+        var date = new Date();
+
+        date.setTime(lastUpdated);
+        document.getElementById('lastUpdated').innerHTML = 'Index was last updated ' + date;
+
+        logFiles.sort(function (a, b) {
+            return b.created - a.created;
+        });
+
+        var logFilesTable = document.getElementById("logFilesTable");
+        for (var i = 0; i < logFiles.length; i++) {
+            var logFile = logFiles[i];
+            date.setTime(logFile.created);
+            var row = logFilesTable.insertRow(-1);
+            var computerNameCell = row.insertCell(0);
+            var pidCell = row.insertCell(1);
+            var typeCell = row.insertCell(2);
+            var dateCell = row.insertCell(3);
+            var logCell = row.insertCell(4);
+            computerNameCell.innerHTML = logFile.computername;
+            pidCell.innerHTML = logFile.pid.toString();
+            typeCell.innerHTML = logFile.type;
+            typeCell.setAttribute('class', logFile.type);
+            dateCell.innerHTML = date.toString();
+            logCell.innerHTML = '<a href="' + logFile.file + '">log</a>';
+        };
+
+    </script>
+</body>
+</html>
