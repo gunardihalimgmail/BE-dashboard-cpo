@@ -224,13 +224,129 @@ app.post('/login/check', (req,res)=>{
 		
 })
 
+
+// TES DOWNLOAD
+// app.get('/download', (req,res,next)=>{
+// 	let filePath = __dirname + "\\static\\koneksi.js"
+// 	console.log(filePath)
+// 	// res.download(filePath);
+// 	res.download(filePath,(err)=>{
+// 		if (err){
+// 			res.status(400).send({
+// 				status:'Failed',
+// 				message: "Error Download File !"
+// 			})
+// 		}
+// 	})
+// })
+
+// CREATE NEW USER
+app.post('/user/create', (req, res) => {
+	let username = req.body?.['username'];
+	let password = req.body?.['password'];
+	let chiper_code = req.body?.['chiper_code'];
+
+	res.setHeader('Content-Type','application/json')
+    res.setHeader('Access-Control-Allow-Origin','*')
+
+	if (username == '' || username == null ||
+        password == '' || password == null ||
+		chiper_code == '' || chiper_code == null)
+    {
+		res.status(400).send(
+			{
+				statusCode: 400,
+				message: 'No Result'
+			}
+		)
+	}
+	else
+	{
+
+		let arr_dec_chiper = [];
+		let dec_chiper = '';
+
+		try {
+			dec_chiper = CryptoJS.AES.decrypt(chiper_code, "!otTIS88jkT").toString(CryptoJS.enc.Utf8)
+		}catch(e){
+			dec_chiper = '';
+		}
+		if (dec_chiper == '')
+		{
+			arr_dec_chiper = [
+				...arr_dec_chiper,
+				'Chiper Code'
+			]
+		}
+
+		let dec_chiper_pass = '';
+		try {
+			dec_chiper_pass = CryptoJS.AES.decrypt(password, "!otTIS88jkT").toString(CryptoJS.enc.Utf8)
+		}catch(e){
+			dec_chiper_pass = '';
+		}
+		if (dec_chiper_pass == '')
+		{
+			arr_dec_chiper = [
+				...arr_dec_chiper,
+				'Password'
+			]
+		}
+
+		let join_dec_chiper = '';
+		join_dec_chiper = arr_dec_chiper.join(' and ')
+		if (join_dec_chiper != '')
+		{
+			// PERIKSA APA ADA CHIPER YANG ERROR / TIDAK BISA DI DEKRIPSI
+			console.log(join_dec_chiper)
+			obj_result = {
+				status: 'Failed',
+				message: join_dec_chiper + ' got encryption error !'
+			}
+			res.status(400).send(
+				{...obj_result}
+			)
+			return
+		}
+
+		getData_SQL_Await('SELECT username FROM Ms_Login WHERE username = \'' + username +'\''
+		).then((result)=>{
+		
+				if (result.length == 0)
+				{
+						obj_result = {
+								status: 'Failed',
+								message: 'Credential is not valid !'
+						}
+						res.status(400).send(
+							{
+								...obj_result
+							}
+						)
+				}
+				else{
+					res.status(200).send(
+						{
+							username,
+							dec_chiper_pass,
+							dec_chiper
+						}
+					)
+				}
+			}
+		)
+
+		
+	}
+})
+
 // GET LOGIN
 app.post('/login', (req, res) => {
 
     let username = req.body?.['username'];
     let password = req.body?.['password'];
 
-		res.setHeader('Content-Type','application/json')
+	res.setHeader('Content-Type','application/json')
     res.setHeader('Access-Control-Allow-Origin','*')
 
     if (username == '' || username == null ||
