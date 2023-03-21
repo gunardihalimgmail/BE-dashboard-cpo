@@ -242,21 +242,29 @@ app.post('/login/check', (req,res)=>{
 
 // CREATE NEW USER
 app.post('/user/create', (req, res) => {
+	let created_user = req.body?.['created_user'];
 	let username = req.body?.['username'];
 	let password = req.body?.['password'];
 	let chiper_code = req.body?.['chiper_code'];
+	let user_level = req.body?.['user_level'];		// new user level
+	
+
+	if (typeof created_user == 'undefined'){created_user = ''}
+
+	console.log(user_level)
 
 	res.setHeader('Content-Type','application/json')
     res.setHeader('Access-Control-Allow-Origin','*')
 
 	if (username == '' || username == null ||
         password == '' || password == null ||
-		chiper_code == '' || chiper_code == null)
+		chiper_code == '' || chiper_code == null ||
+		user_level == '' || user_level == null)
     {
 		res.status(400).send(
 			{
 				statusCode: 400,
-				message: 'No Result'
+				message: 'Check your input such as Username, Password, Chiper Code and User Level !'
 			}
 		)
 	}
@@ -293,12 +301,28 @@ app.post('/user/create', (req, res) => {
 			]
 		}
 
+		let dec_chiper_user_level = '';
+		try {
+			dec_chiper_user_level = CryptoJS.AES.decrypt(user_level, "!otTIS88jkT").toString(CryptoJS.enc.Utf8)
+		}catch(e){
+			dec_chiper_user_level = '';
+		}
+		if (dec_chiper_user_level == '')
+		{
+			arr_dec_chiper = [
+				...arr_dec_chiper,
+				'Parent User Level'
+			]
+		}
+
 		let join_dec_chiper = '';
-		join_dec_chiper = arr_dec_chiper.join(' and ')
+		// join_dec_chiper = arr_dec_chiper.join(' and ')
+		join_dec_chiper = arr_dec_chiper.join(', ')
+		join_dec_chiper = join_dec_chiper.replace(/, ([^,]*)$/g,' and $1')
 		if (join_dec_chiper != '')
 		{
 			// PERIKSA APA ADA CHIPER YANG ERROR / TIDAK BISA DI DEKRIPSI
-			console.log(join_dec_chiper)
+			// console.log(join_dec_chiper)
 			obj_result = {
 				status: 'Failed',
 				message: join_dec_chiper + ' got encryption error !'
@@ -309,14 +333,26 @@ app.post('/user/create', (req, res) => {
 			return
 		}
 
-		getData_SQL_Await('SELECT username FROM Ms_Login WHERE username = \'' + username +'\''
+		if (dec_chiper_user_level == 'USER'){
+
+			res.status(400).send(
+				{
+					status: 'Failed',
+					message: 'You can\'t create new account for level \'USER\' !'
+				}
+			)
+			return
+		}
+
+		getData_SQL_Await('SELECT username, user_level FROM Ms_Login WHERE username = \'' + username +'\''
 		).then((result)=>{
 		
-				if (result.length == 0)
+			// JIKA USERNAME SUDAH ADA, MAKA FAILED
+				if (result.length != 0)
 				{
 						obj_result = {
 								status: 'Failed',
-								message: 'Credential is not valid !'
+								message: 'Username ' + username +' is exists !'
 						}
 						res.status(400).send(
 							{
@@ -325,13 +361,30 @@ app.post('/user/create', (req, res) => {
 						)
 				}
 				else{
-					res.status(200).send(
-						{
-							username,
-							dec_chiper_pass,
-							dec_chiper
-						}
-					)
+					
+					getData_SQL_Await('INSERT INTO Ms_Login(' + 
+								'username, password, user_level, created_date, created_user)' + 
+							'VALUES(' + 
+								'\'' + username + '\', ENCRYPTBYASYMKEY(ASYMKEY_ID(\'iotTIS88jkT\'),\'' + dec_chiper_pass + '\'),' +
+								'\'' + dec_chiper_user_level +'\', GETDATE(), \''+ created_user + '\')'
+					).then((result)=>{
+
+						res.status(200).send({
+							status: 'Success'
+						})
+						// console.log("RESULT : " + result)
+					})
+
+					// res.status(200).send(
+					// 	{
+					// 		created_user,
+					// 		username,
+					// 		dec_chiper_pass,
+					// 		dec_chiper,
+					// 		dec_chiper_user_level
+					// 	}	
+					// )
+					
 				}
 			}
 		)
