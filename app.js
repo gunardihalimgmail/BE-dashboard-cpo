@@ -247,6 +247,7 @@ app.post('/user/create', (req, res) => {
 	let password = req.body?.['password'];
 	let chiper_code = req.body?.['chiper_code'];
 	let user_level = req.body?.['user_level'];		// new user level
+	let parent_user_level = req.body?.['parent_user_level'];		// parent user level
 
 
 	if (typeof created_user == 'undefined'){created_user = ''}
@@ -259,12 +260,13 @@ app.post('/user/create', (req, res) => {
 	if (username == '' || username == null ||
         password == '' || password == null ||
 		chiper_code == '' || chiper_code == null ||
-		user_level == '' || user_level == null)
+		user_level == '' || user_level == null ||
+		parent_user_level == '' || parent_user_level == null)
     {
 		res.status(400).send(
 			{
 				statusCode: 400,
-				message: 'Check your input such as Username, Password, Chiper Code and User Level !'
+				message: 'Check your input such as Username, Password, Chiper Code, User Level and Parent User Level !'
 			}
 		)
 	}
@@ -274,6 +276,7 @@ app.post('/user/create', (req, res) => {
 		let arr_dec_chiper = [];
 		let dec_chiper = '';
 
+		// CHIPER CODE
 		try {
 			dec_chiper = CryptoJS.AES.decrypt(chiper_code, "!otTIS88jkT").toString(CryptoJS.enc.Utf8)
 		}catch(e){
@@ -287,6 +290,7 @@ app.post('/user/create', (req, res) => {
 			]
 		}
 
+		// PASSWORD
 		let dec_chiper_pass = '';
 		try {
 			dec_chiper_pass = CryptoJS.AES.decrypt(password, "!otTIS88jkT").toString(CryptoJS.enc.Utf8)
@@ -301,6 +305,7 @@ app.post('/user/create', (req, res) => {
 			]
 		}
 
+		// USER LEVEL
 		let dec_chiper_user_level = '';
 		try {
 			dec_chiper_user_level = CryptoJS.AES.decrypt(user_level, "!otTIS88jkT").toString(CryptoJS.enc.Utf8)
@@ -308,6 +313,21 @@ app.post('/user/create', (req, res) => {
 			dec_chiper_user_level = '';
 		}
 		if (dec_chiper_user_level == '')
+		{
+			arr_dec_chiper = [
+				...arr_dec_chiper,
+				'User Level'
+			]
+		}
+
+		// PARENT USER LEVEL
+		let dec_chiper_parent_user_level = '';
+		try {
+			dec_chiper_parent_user_level = CryptoJS.AES.decrypt(parent_user_level, "!otTIS88jkT").toString(CryptoJS.enc.Utf8)
+		}catch(e){
+			dec_chiper_parent_user_level = '';
+		}
+		if (dec_chiper_parent_user_level == '')
 		{
 			arr_dec_chiper = [
 				...arr_dec_chiper,
@@ -333,8 +353,9 @@ app.post('/user/create', (req, res) => {
 			return
 		}
 
-		if (dec_chiper_user_level == 'USER'){
 
+		if (dec_chiper_parent_user_level == 'USER'){
+			// jika user level dari parent adalah 'USER', maka account baru tidak bisa di create
 			res.status(400).send(
 				{
 					status: 'Failed',
@@ -384,8 +405,6 @@ app.post('/user/create', (req, res) => {
 					// 		dec_chiper_user_level
 					// 	}	
 					// )
-					
-					// tes
 				}
 			}
 		)
