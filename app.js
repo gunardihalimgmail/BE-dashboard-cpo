@@ -81,7 +81,7 @@ app.post('/login/changepwd', (req, res)=>{
 				}
 
 				getData_SQL_Await('UPDATE Ms_Login ' + 
-													'SET password = ENCRYPTBYASYMKEY(ASYMKEY_ID(N\'iotTIS88jKT\'),\'' + dec_chiper + '\')' + 
+													'SET password = ENCRYPTBYASYMKEY(ASYMKEY_ID(N\'iotTIS88jkT\'),CAST(\'' + dec_chiper + '\' as nvarchar(max)))' + 
 													'WHERE username = \'' + username + '\'')
 				.then((result)=>{
 
@@ -96,7 +96,7 @@ app.post('/login/changepwd', (req, res)=>{
 		// 		status:'Success',
 		// 		message:'Username ' + username
 		// })
-		console.log(username)
+		// console.log(username)
 })
 
 // untuk cek apakah username dengan password yang dimasukkan valid
@@ -437,7 +437,7 @@ app.post('/login', (req, res) => {
 
 		else{
 
-				getData_SQL_Await('SELECT * FROM (SELECT username, password, cast(decryptbyasymkey(ASYMKEY_ID(N\'iotTIS88jKT\'), password) as varchar(max))' + 
+				getData_SQL_Await('SELECT * FROM (SELECT username, password, cast(decryptbyasymkey(ASYMKEY_ID(N\'iotTIS88jkT\'), password) as nvarchar(max))' + 
 												'as pass_dec, user_level FROM Ms_Login WHERE username = \'' + username + '\'' + 
 												') AS TEMP ' + 
 												'WHERE pass_dec = \'' + password + '\''
