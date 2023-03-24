@@ -251,7 +251,6 @@ app.post('/user/create', (req, res) => {
 	let user_level = req.body?.['user_level'];		// new user level
 	let parent_user_level = req.body?.['parent_user_level'];		// parent user level
 
-
 	if (typeof created_user == 'undefined'){created_user = ''}
 
 	console.log(user_level)
@@ -388,7 +387,7 @@ app.post('/user/create', (req, res) => {
 					getData_SQL_Await('INSERT INTO Ms_Login(' + 
 								'username, password, user_level, created_date, created_user)' + 
 							'VALUES(' + 
-								'\'' + username + '\', ENCRYPTBYASYMKEY(ASYMKEY_ID(\'iotTIS88jkT\'),\'' + dec_chiper_pass + '\'),' +
+								'\'' + username + '\', ENCRYPTBYASYMKEY(ASYMKEY_ID(\'iotTIS88jkT\'), CAST(\'' + dec_chiper_pass + '\' AS NVARCHAR(MAX))),' +
 								'\'' + dec_chiper_user_level +'\', GETDATE(), \''+ created_user + '\')'
 					).then((result)=>{
 
