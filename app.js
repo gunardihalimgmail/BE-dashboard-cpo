@@ -196,7 +196,9 @@ app.post('/login/check', (req,res)=>{
 		// console.log(username)
 		// console.log(password)
 
-		getData_SQL_Await('SELECT * FROM (SELECT username, password, cast(decryptbyasymkey(ASYMKEY_ID(N\'iotTIS88jKT\'), password) as varchar(max))' + 
+		// CAST AS VARCHAR(MAX) => UNTUK LOCALHOST
+		// CAST AS NVARCHAR(MAX) => UNTUK SERVER 192.168.1.120
+		getData_SQL_Await('SELECT * FROM (SELECT username, password, cast(decryptbyasymkey(ASYMKEY_ID(N\'iotTIS88jkT\'), password) as nvarchar(max))' + 
 												'as pass_dec, user_level FROM Ms_Login WHERE username = \'' + username + '\'' + 
 												') AS TEMP ' + 
 												'WHERE pass_dec = \'' + dec_chiper_pass + '\''
@@ -215,7 +217,7 @@ app.post('/login/check', (req,res)=>{
 							}
 					}
 
-					console.log(result)
+					// console.log(result)
 
 					res.status(200).send({
 						...obj_result

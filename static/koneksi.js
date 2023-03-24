@@ -10,11 +10,32 @@ const sqlConfig_local = {
     // trusted_connection:true
 }
 
+const sqlConfig_Server = {
+    user: process.env.DB_USER || 'loginiot',
+    password: process.env.DB_PWD || '!otTIS88jkT',
+    driver:"SQL Server",
+    database: process.env.DB_NAME || 'IOT_MS',
+    server: '192.168.1.120',
+    // options:{
+    //     trustedConnection:true
+    // }
+    // pool: {
+    //   max: 10,
+    //   min: 0,
+    //   idleTimeoutMillis: 30000
+    // },
+    options: {
+      encrypt: false, // for azure  (di false-kan untuk bisa connect ke 192.168.1.120)
+      trustServerCertificate: false // change to true for local dev / self-signed certs
+    }
+}
+
 let getData_Arr = [];
 
 // CARA SYNCHRONOUS
 const getData_SQL_Await = async (query) => {
-    let pool = await sql.connect(sqlConfig_local);
+    // let pool = await sql.connect(sqlConfig_local);
+    let pool = await sql.connect(sqlConfig_Server);
     let data = await pool.request()
                 .query(query)
                 // .input("param_tangki",sql.VarChar, '1')
@@ -28,7 +49,8 @@ const getData_SQL_Await = async (query) => {
 
 // CARA SYNCHRONOUS WITH INPUT PARAMETER
 const getData_SQL_Await_Login = async () => {
-    let pool = await sql.connect(sqlConfig_local);
+    // let pool = await sql.connect(sqlConfig_local);
+    let pool = await sql.connect(sqlConfig_Server);
     let data = await pool.request()
                 .input('pass',sql.VarChar, 'iotTIS88jKT')
                 .query('SELECT username, password, ' + 
@@ -48,7 +70,8 @@ const getData_SQL_Await_Login = async () => {
 // CARA ASYNCHRONOUS
 const getData_SQL = (callback) => {
 
-    sql.connect(sqlConfig_local, err => {
+    // sql.connect(sqlConfig_local, err => {
+    sql.connect(sqlConfig_Server, err => {
         new sql.Request().query('SELECT top 5 * from dbo.Ms_Volume_Tangki', (err, results) => {
     
             // console.log(".:The Good Place:.");
