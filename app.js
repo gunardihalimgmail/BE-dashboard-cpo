@@ -11,21 +11,21 @@ const CryptoJS = require('crypto-js')
 // const sql = require('mssql/msnodesqlv8')      // LOCALHOST
 
 // KONEKSI SQL SERVER AUTHENTICATION (BY PASSWORD)
-const sqlConfig_Server = {
-    user: process.env.DB_USER || 'loginiot',
-    password: process.env.DB_PWD || '!otTIS88jkT',
-    database: process.env.DB_NAME || 'IOT',
-    server: '192.168.1.120',
-    // pool: {
-    //   max: 10,
-    //   min: 0,
-    //   idleTimeoutMillis: 30000
-    // },
-    options: {
-      encrypt: false, // for azure  (di false-kan untuk bisa connect ke 192.168.1.120)
-      trustServerCertificate: false // change to true for local dev / self-signed certs
-    }
-}
+// const sqlConfig_Server = {
+//     user: process.env.DB_USER || 'loginiot',
+//     password: process.env.DB_PWD || '!otTIS88jkT',
+//     database: process.env.DB_NAME || 'IOT',
+//     server: '192.168.1.120',
+//     // pool: {
+//     //   max: 10,
+//     //   min: 0,
+//     //   idleTimeoutMillis: 30000
+//     // },
+//     options: {
+//       encrypt: false, // for azure  (di false-kan untuk bisa connect ke 192.168.1.120)
+//       trustServerCertificate: false // change to true for local dev / self-signed certs
+//     }
+// }
 
 const app = express();
 
@@ -495,6 +495,40 @@ app.get('/volume',(req,res)=>{
             })
         }
     },100)
+})
+
+app.get('/company', (req,res)=>{
+	setTimeout(()=>{
+		let id = req?.['query']?.['id'];
+    
+        res.setHeader("Content-Type","application/json")
+        res.setHeader('Access-Control-Allow-Origin','*')
+
+		if (typeof id != 'undefined' && id != null)
+        {
+			getData_SQL_Await('SELECT * FROM dbo.Ms_Company where id = ' + id).then(result=>{
+				if (result.length == 0){
+					res.status(404).send({
+						statusCode:404,
+						message: 'Company ID ' + id + ' Not Found' 
+					})
+				}
+				else{
+					res.status(200).send(result)
+				}
+            })
+
+			// res.status(404).send({
+			// 	statusCode: 404,
+			// 	message:'Company ' + company + ' Not Found'
+			// })
+		}
+		else{
+			getData_SQL_Await('SELECT * FROM dbo.Ms_Company').then(result=>{
+                res.status(200).send(result)
+            })
+		}
+	},100)
 })
 
 
