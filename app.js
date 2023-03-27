@@ -6,6 +6,7 @@ const { peoples, ages } = require('./static/people');
 const { getData_SQL_Await, getData_SQL, getData_SQL_Await_Login} = require('./static/koneksi');
 const port = process.env.PORT || 3007;
 const CryptoJS = require('crypto-js')
+const cors = require('cors')
 
 // const sql = require('mssql')
 // const sql = require('mssql/msnodesqlv8')      // LOCALHOST
@@ -29,6 +30,7 @@ const CryptoJS = require('crypto-js')
 
 const app = express();
 
+app.use(cors())
 const bodyParser = require('body-parser')
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: true}))
@@ -413,6 +415,138 @@ app.post('/user/create', (req, res) => {
 		
 	}
 })
+		
+// UPDATE JENIS CPO / PKO
+app.post('/update/jenis', (req, res) => {
+
+	let tanggal = req.body?.['tanggal'] ?? '';
+	let company_id = req.body?.['company'] ?? '';
+	let tangki = req.body?.['tangki'] ?? '';
+	let jenis = req.body?.['jenis'] ?? '';
+
+	res.setHeader('Content-Type','application/json')
+	res.setHeader('Access-Control-Allow-Origin','*')
+
+	if (tanggal == '' || company_id == '' || tangki == '' || jenis == '')
+	{
+		res.status(200).send({
+			status:'failed',
+			message: 'Check your input such as tanggal, company, tangki and jenis !'
+		})
+	}
+	else
+	{
+		
+		getData_SQL_Await('SELECT * FROM Ms_Company WHERE id = ' + company_id)
+		.then((result)=>{
+			// res.status(200).send({
+			// 	status: 'Success'
+			// })
+			if (result.length == 0)
+			{
+				res.status(200).send({
+					status:'failed',
+					message: 'Company is not exists !'
+				})
+				return
+			}
+			else
+			{
+
+				// periksa jika data sudah ada, maka di update sebaliknya di insert
+				getData_SQL_Await(
+					'SELECT ms_tank_jenis.[id] AS id_tank_jenis' + 
+							', ms_tank_jenis.[company_id] ' + 
+							', ms_comp.company_name ' + 
+							', CONVERT(varchar(max),ms_tank_jenis.[tanggal]) AS tanggal ' + 
+							', format(ms_tank_jenis.[tanggal],\'dd MMMM yyyy\') as tanggal_format ' + 
+							', ms_tank_jenis.[tangki_name] AS tangki_id ' + 
+							', ms_comp_tank.[tangki_name] ' + 
+							', ms_tank_jenis.[jenis] ' + 
+					'FROM [IOT_MS].[dbo].[Ms_Tangki_Jenis] AS ms_tank_jenis ' +
+						'INNER JOIN Ms_Company AS ms_comp ' + 
+							'ON ms_tank_jenis.company_id = ms_comp.id ' +
+						'INNER JOIN Ms_Company_Tangki AS ms_comp_tank ' + 
+							'ON ms_tank_jenis.company_id = ms_comp_tank.company_id ' + 
+								'AND ms_tank_jenis.tangki_name = ms_comp_tank.tangki_id ' + 
+					'WHERE ms_tank_jenis.tanggal = \'' + tanggal + '\'' +
+						'AND ms_tank_jenis.tangki_name = \'' + tangki + '\'' +
+						'AND ms_comp.id = ' + company_id
+				).then(result=>{
+					if (result.length == 0){
+
+						getData_SQL_Await('INSERT INTO Ms_Tangki_Jenis(company_id, tanggal, tangki_name, jenis)' + 
+									'VALUES(' + company_id + ', \'' + tanggal + '\', \'' + tangki + '\',\'' + jenis + '\')'
+						).then((result)=>{
+		
+							res.status(200).send({
+								status: 'Success'
+							})
+		
+						}).catch((e)=>{
+		
+							res.status(200).send({
+								status:'failed',
+								message: e?.['name']
+							})
+						})
+						
+					}
+					else
+					{
+						// console.log(tanggal)
+						// console.log(tangki)
+						// console.log(company_id)
+						// console.log(result)
+
+						// console.log(result[0]?.['id_tank_jenis'])
+
+						getData_SQL_Await(
+							'UPDATE Ms_Tangki_Jenis ' + 
+							'SET jenis = \'' + jenis + '\'' + 
+							'WHERE id = ' + result[0]?.['id_tank_jenis']
+						).then((result)=>{
+		
+							res.status(200).send({
+								status: 'Success'
+							})
+		
+						}).catch((e)=>{
+		
+							res.status(200).send({
+								status:'failed',
+								message: e?.['name']
+							})
+						})
+
+						// getData_SQL_Await('INSERT INTO Ms_Tangki_Jenis(company_id, tanggal, tangki_name, jenis)' + 
+						// 			'VALUES(' + company_id + ', \'' + tanggal + '\', \'' + tangki + '\',\'' + jenis + '\')'
+						// ).then((result)=>{
+		
+						// 	res.status(200).send({
+						// 		status: 'Success'
+						// 	})
+		
+						// }).catch((e)=>{
+		
+						// 	res.status(200).send({
+						// 		status:'failed',
+						// 		message: e?.['name']
+						// 	})
+						// })
+					}
+				})
+
+
+			}
+		})
+	}
+
+
+})
+
+
+
 
 // GET LOGIN
 app.post('/login', (req, res) => {
@@ -508,8 +642,8 @@ app.get('/company', (req,res)=>{
         {
 			getData_SQL_Await('SELECT * FROM dbo.Ms_Company where id = ' + id).then(result=>{
 				if (result.length == 0){
-					res.status(404).send({
-						statusCode:404,
+					res.status(200).send({
+						status: 'failed',
 						message: 'Company ID ' + id + ' Not Found' 
 					})
 				}
@@ -531,6 +665,95 @@ app.get('/company', (req,res)=>{
 	},100)
 })
 
+app.get('/company/tangki', (req, res)=>{
+	setTimeout(()=>{
+
+		let company_id = req?.['query']?.['company_id'];
+		
+        res.setHeader("Content-Type","application/json")
+        res.setHeader('Access-Control-Allow-Origin','*')
+
+		if (typeof company_id != 'undefined' && company_id != null)
+		{
+			getData_SQL_Await('SELECT * FROM dbo.Ms_Company_Tangki where company_id = ' + company_id).then(result=>{
+				if (result.length == 0){
+					res.status(200).send({
+						status: 'failed',
+						message: 'Company ID ' + company_id + ' Not Found' 
+					})
+				}
+				else{
+					res.status(200).send(result)
+				}
+            })
+		}
+		else{
+			getData_SQL_Await('SELECT * FROM dbo.Ms_Company_Tangki').then(result=>{
+                res.status(200).send(result)
+            })
+		}
+	},100)
+})
+
+// dapatkan jenis berdasarkan parameter company, tanggal, tangki
+app.get('/company/tangki/jenis', (req, res)=>{
+	setTimeout(()=>{
+
+		let tanggal = req?.['query']?.['tanggal'];
+		let company_id = req?.['query']?.['company_id'];
+		let tangki_id = req?.['query']?.['tangki_id'];
+		// console.log(tanggal)
+		// console.log(company_id)
+		// console.log(tangki_id)
+		
+        res.setHeader("Content-Type","application/json")
+        res.setHeader('Access-Control-Allow-Origin','*')
+
+		if (typeof company_id != 'undefined' && company_id != null &&
+			typeof tanggal != 'undefined' && tanggal != null &&
+			typeof tangki_id != 'undefined' && tangki_id != null)
+		{
+			getData_SQL_Await(
+				'SELECT ms_tank_jenis.[company_id] ' + 
+						', ms_comp.company_name ' + 
+						', CONVERT(varchar(max),ms_tank_jenis.[tanggal]) AS tanggal ' + 
+						', format(ms_tank_jenis.[tanggal],\'dd MMMM yyyy\') as tanggal_format ' + 
+						', ms_tank_jenis.[tangki_name] AS tangki_id ' + 
+						', ms_comp_tank.[tangki_name] ' + 
+						', ms_tank_jenis.[jenis] ' + 
+				'FROM [IOT_MS].[dbo].[Ms_Tangki_Jenis] AS ms_tank_jenis ' +
+					'INNER JOIN Ms_Company AS ms_comp ' + 
+						'ON ms_tank_jenis.company_id = ms_comp.id ' +
+					'INNER JOIN Ms_Company_Tangki AS ms_comp_tank ' + 
+						'ON ms_tank_jenis.company_id = ms_comp_tank.company_id ' + 
+							'AND ms_tank_jenis.tangki_name = ms_comp_tank.tangki_id ' + 
+				'WHERE ms_tank_jenis.tanggal = \'' + tanggal + '\'' +
+					'AND ms_tank_jenis.tangki_name = \'' + tangki_id + '\'' +
+					'AND ms_comp.id = ' + company_id
+			).then(result=>{
+				if (result.length == 0){
+					res.status(200).send({
+						status: 'failed',
+						message: 'Data Not Found !'
+					})
+				}
+				else{
+					// console.log(result[0])
+					res.status(200).send({
+						status: 'Success',
+						data:{...result[0]}
+					})
+				}
+            })
+		}
+		else{
+			res.status(200).send({
+				status: 'failed',
+				message: 'Parameter Not Completed !'
+			})
+		}
+	},100)
+})
 
 // getData_SQL((res)=>{
 //     console.log(res)
