@@ -35,14 +35,16 @@ let getData_Arr = [];
 // CARA SYNCHRONOUS
 const getData_SQL_Await = async (query) => {
     // let pool = await sql.connect(sqlConfig_local);
+    // let pool = await sql.connect(sqlConfig_Server);
+    // let data = await pool.request()
     let pool = await sql.connect(sqlConfig_Server);
     let data = await pool.request()
                 .query(query)
                 // .input("param_tangki",sql.VarChar, '1')
                 // .query('SELECT TOP 5 * FROM dbo.Ms_Volume_Tangki WHERE tangki = isnull(@param_tangki,tangki)');
 
-    pool.close();
-    sql.close();
+    // pool.close();
+    // sql.close();
 
     return data.recordset;
 }

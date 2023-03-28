@@ -31,10 +31,21 @@ const cors = require('cors')
 const app = express();
 
 app.use(cors())
-const bodyParser = require('body-parser')
+const bodyParser = require('body-parser');
+const { isNumberObject } = require('util/types');
+const { isEmpty } = require('lodash');
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: true}))
 
+// for not caching, always not modified
+app.disable('etag');
+
+let funcMid = function (req, res, next) {
+	// setTimeout(()=>{
+	console.log('This is MIDDLEWARE')
+	next();
+	// },50)
+}
 
 // api untuk change password
 app.post('/login/changepwd', (req, res)=>{
@@ -600,7 +611,7 @@ app.post('/login', (req, res) => {
 // ... end <LOGIN>
 
 
-app.get('/volume',(req,res)=>{
+app.get('/volume',funcMid, (req,res)=>{
 
     setTimeout(()=>{
         let tangki = req?.['query']?.['tangki'];
@@ -631,7 +642,7 @@ app.get('/volume',(req,res)=>{
     },100)
 })
 
-app.get('/company', (req,res)=>{
+app.get('/company', funcMid, (req,res)=>{
 	setTimeout(()=>{
 		let id = req?.['query']?.['id'];
     
@@ -665,7 +676,7 @@ app.get('/company', (req,res)=>{
 	},100)
 })
 
-app.get('/company/tangki', (req, res)=>{
+app.get('/company/tangki', funcMid, (req, res)=>{
 	setTimeout(()=>{
 
 		let company_id = req?.['query']?.['company_id'];
@@ -675,28 +686,60 @@ app.get('/company/tangki', (req, res)=>{
 
 		if (typeof company_id != 'undefined' && company_id != null)
 		{
-			getData_SQL_Await('SELECT * FROM dbo.Ms_Company_Tangki where company_id = ' + company_id).then(result=>{
-				if (result.length == 0){
+			try {
+				let tesNumber = !isNaN(company_id)
+
+				if (!tesNumber){
 					res.status(200).send({
 						status: 'failed',
-						message: 'Company ID ' + company_id + ' Not Found' 
+						message: 'Company ID is not type of Number !' 
 					})
+					return
+				}
+			}catch(e){
+				res.status(200).send({
+					status: 'failed',
+					message: 'Company ID is failed !' 
+				})
+				return
+			}
+
+			setTimeout(()=>{
+				if (isEmpty(company_id)){
+					res.status(200).send({
+						status: 'failed',
+						message: 'Company ID is Empty !' 
+					})
+					return
 				}
 				else{
-					res.status(200).send(result)
+					getData_SQL_Await('SELECT * FROM dbo.Ms_Company_Tangki where company_id = \'' + company_id + '\'').then(result=>{
+						if (result.length == 0){
+							res.status(200).send({
+								status: 'failed',
+								message: 'Company ID ' + company_id + ' Not Found' 
+							})
+							return
+						}
+						else{
+							res.status(200).send(result)
+						}
+					})
 				}
-            })
+			},70)
 		}
 		else{
-			getData_SQL_Await('SELECT * FROM dbo.Ms_Company_Tangki').then(result=>{
-                res.status(200).send(result)
-            })
+			setTimeout(()=>{
+				getData_SQL_Await('SELECT * FROM dbo.Ms_Company_Tangki').then(result=>{
+					res.status(200).send(result)
+				})
+			},70)
 		}
 	},100)
 })
 
 // dapatkan jenis berdasarkan parameter company, tanggal, tangki
-app.get('/company/tangki/jenis', (req, res)=>{
+app.get('/company/tangki/jenis', funcMid, (req, res)=>{
 	setTimeout(()=>{
 
 		let tanggal = req?.['query']?.['tanggal'];
@@ -713,53 +756,249 @@ app.get('/company/tangki/jenis', (req, res)=>{
 			typeof tanggal != 'undefined' && tanggal != null &&
 			typeof tangki_id != 'undefined' && tangki_id != null)
 		{
-			getData_SQL_Await(
-				'SELECT ms_tank_jenis.[company_id] ' + 
-						', ms_comp.company_name ' + 
-						', CONVERT(varchar(max),ms_tank_jenis.[tanggal]) AS tanggal ' + 
-						', format(ms_tank_jenis.[tanggal],\'dd MMMM yyyy\') as tanggal_format ' + 
-						', ms_tank_jenis.[tangki_name] AS tangki_id ' + 
-						', ms_comp_tank.[tangki_name] ' + 
-						', ms_tank_jenis.[jenis] ' + 
-				'FROM [IOT_MS].[dbo].[Ms_Tangki_Jenis] AS ms_tank_jenis ' +
-					'INNER JOIN Ms_Company AS ms_comp ' + 
-						'ON ms_tank_jenis.company_id = ms_comp.id ' +
-					'INNER JOIN Ms_Company_Tangki AS ms_comp_tank ' + 
-						'ON ms_tank_jenis.company_id = ms_comp_tank.company_id ' + 
-							'AND ms_tank_jenis.tangki_name = ms_comp_tank.tangki_id ' + 
-				'WHERE ms_tank_jenis.tanggal = \'' + tanggal + '\'' +
-					'AND ms_tank_jenis.tangki_name = \'' + tangki_id + '\'' +
-					'AND ms_comp.id = ' + company_id
-			).then(result=>{
-				if (result.length == 0){
-					res.status(200).send({
-						status: 'failed',
-						message: 'Data Not Found !'
-					})
+
+			let cek_tanggal;
+			try{
+				cek_tanggal = new Date(tanggal)
+				if (isNaN(cek_tanggal)){
+					res.status(200).send(
+						{
+							status:'failed',
+							message: 'Convert Tanggal is failed !'
+						}
+					)
+					return
 				}
-				else{
-					// console.log(result[0])
-					res.status(200).send({
-						status: 'Success',
-						data:{...result[0]}
-					})
-				}
-            })
+			}catch(e){
+				res.status(200).send(
+					{
+						status:'failed',
+						message: 'Convert Tanggal is failed !'
+					}
+				)
+				return
+			}
+			
+
+			setTimeout(()=>{
+				getData_SQL_Await(
+					'SELECT ms_tank_jenis.[company_id] ' + 
+							', ms_comp.company_name ' + 
+							', CONVERT(varchar(max),ms_tank_jenis.[tanggal]) AS tanggal ' + 
+							', format(ms_tank_jenis.[tanggal],\'dd MMMM yyyy\') as tanggal_format ' + 
+							', ms_tank_jenis.[tangki_name] AS tangki_id ' + 
+							', ms_comp_tank.[tangki_name] ' + 
+							', ms_tank_jenis.[jenis] ' + 
+					'FROM [IOT_MS].[dbo].[Ms_Tangki_Jenis] AS ms_tank_jenis ' +
+						'INNER JOIN Ms_Company AS ms_comp ' + 
+							'ON ms_tank_jenis.company_id = ms_comp.id ' +
+						'INNER JOIN Ms_Company_Tangki AS ms_comp_tank ' + 
+							'ON ms_tank_jenis.company_id = ms_comp_tank.company_id ' + 
+								'AND ms_tank_jenis.tangki_name = ms_comp_tank.tangki_id ' + 
+					'WHERE ms_tank_jenis.tanggal = \'' + tanggal + '\'' +
+						'AND ms_tank_jenis.tangki_name = \'' + tangki_id + '\'' +
+						'AND ms_comp.id = ' + company_id
+				).then(result=>{
+					if (result.length == 0){
+						res.status(200).send({
+							status: 'failed',
+							message: 'Data Not Found ! '
+						})
+						return
+					}
+					else{
+						// console.log(result[0])
+						res.status(200).send({
+							status: 'Success',
+							data:{...result[0]}
+						})
+					}
+				})
+			},100)
 		}
 		else{
 			res.status(200).send({
 				status: 'failed',
 				message: 'Parameter Not Completed !'
 			})
+			return
 		}
 	},100)
 })
 
+
+// dapatkan jenis berdasarkan parameter tanggal dan tangki id
+app.get('/getJenisByDatentank', funcMid, (req, res)=>{
+	// setTimeout(()=>{
+
+		let tanggal = req?.['query']?.['tanggal'];
+		let tangki_id = req?.['query']?.['tangki_id'];
+		
+        res.setHeader("Content-Type","application/json")
+        res.setHeader('Access-Control-Allow-Origin','*')
+		// console.log(tangki_id)
+
+		if (typeof tanggal != 'undefined' && tanggal != null &&
+			typeof tangki_id != 'undefined' && tangki_id != null)
+		{
+
+			// tanggal => 2023-03-28
+			let cek_tanggal;
+			try{
+				cek_tanggal = new Date(tanggal)
+				if (isNaN(cek_tanggal)){
+					res.status(200).send(
+						{
+							status:'failed',
+							message: 'Convert Tanggal is failed !'
+						}
+					)
+					return
+				}
+			}catch(e){
+				res.status(200).send(
+					{
+						status:'failed',
+						message: 'Convert Tanggal is failed !'
+					}
+				)
+				return
+			}
+			
+
+			// setTimeout(()=>{
+				getData_SQL_Await(
+					'SELECT mtj.company_id' + 
+						', CONVERT(VARCHAR(MAX), mtj.tanggal) AS tanggal ' + 
+						', FORMAT(mtj.tanggal, \'dd MMMM yyyy\') AS tanggal_format ' + 
+						', mtj.tangki_name AS tangki_id ' + 
+						', mct.tangki_name AS tangki_name ' + 
+						', mc.company_name ' + 
+						', mtj.jenis ' + 
+					'FROM Ms_Tangki_Jenis mtj ' + 
+					'INNER JOIN Ms_Company mc ' +
+						'ON mtj.company_id = mc.id ' + 
+					'INNER JOIN Ms_Company_Tangki mct ' +
+						'ON mtj.tangki_name = mct.tangki_id AND ' + 
+							'mtj.company_id = mct.company_id ' +
+					'WHERE mtj.tanggal = \'' + tanggal + '\'' + 
+					' AND mtj.tangki_name = \'' + tangki_id.toString() + '\''
+				).then(result=>{
+					if (result.length == 0){
+						res.status(200).send({
+							status: 'failed',
+							message: 'Data Not Found ! '
+						})
+						return
+					}
+					else{
+						// console.log(result[0])	
+						res.status(200).send({
+							status: 'Success',
+							data:[...result]
+						})
+					}
+				})
+			// },70)
+		}
+		else{
+			res.status(200).send({
+				status: 'failed',
+				message: 'Parameter Not Completed !'
+			})
+			return
+		}
+	// },100)
+})
+
+
+// dapatkan jenis berdasarkan parameter tanggal
+app.get('/getJenisByDate', funcMid, (req, res)=>{
+	// setTimeout(()=>{
+
+		let tanggal = req?.['query']?.['tanggal'];
+		let tangki_id = req?.['query']?.['tangki_id'];
+		
+        res.setHeader("Content-Type","application/json")
+        res.setHeader('Access-Control-Allow-Origin','*')
+		// console.log(tangki_id)
+
+		if (typeof tanggal != 'undefined' && tanggal != null)
+		{
+
+			// tanggal => 2023-03-28
+			let cek_tanggal;
+			try{
+				cek_tanggal = new Date(tanggal)
+				if (isNaN(cek_tanggal)){
+					res.status(200).send(
+						{
+							status:'failed',
+							message: 'Convert Tanggal is failed !'
+						}
+					)
+					return
+				}
+			}catch(e){
+				res.status(200).send(
+					{
+						status:'failed',
+						message: 'Convert Tanggal is failed !'
+					}
+				)
+				return
+			}
+			
+
+			// setTimeout(()=>{
+				getData_SQL_Await(
+					'SELECT mtj.company_id' + 
+						', CONVERT(VARCHAR(MAX), mtj.tanggal) AS tanggal ' + 
+						', FORMAT(mtj.tanggal, \'dd MMMM yyyy\') AS tanggal_format ' + 
+						', mtj.tangki_name AS tangki_id ' + 
+						', mct.tangki_name AS tangki_name ' + 
+						', mc.company_name ' + 
+						', mtj.jenis ' + 
+					'FROM Ms_Tangki_Jenis mtj ' + 
+					'INNER JOIN Ms_Company mc ' +
+						'ON mtj.company_id = mc.id ' + 
+					'INNER JOIN Ms_Company_Tangki mct ' +
+						'ON mtj.tangki_name = mct.tangki_id AND ' + 
+							'mtj.company_id = mct.company_id ' +
+					'WHERE mtj.tanggal = \'' + tanggal + '\''
+				).then(result=>{
+					if (result.length == 0){
+						res.status(200).send({
+							status: 'failed',
+							message: 'Data Not Found ! '
+						})
+						return
+					}
+					else{
+						// console.log(result[0])	
+						res.status(200).send({
+							status: 'Success',
+							data:[...result]
+						})
+					}
+				})
+			// },70)
+		}
+		else{
+			res.status(200).send({
+				status: 'failed',
+				message: 'Parameter Not Completed !'
+			})
+			return
+		}
+	// },100)
+})
+
+
+
 // getData_SQL((res)=>{
 //     console.log(res)
 // })
-
-
 
 // const conn = new sql.ConnectionPool({
 //     database: "Inventory",
@@ -856,14 +1095,7 @@ app.get('/company/tangki/jenis', (req, res)=>{
 // app.listen(3007);
 // app.use(express.static(path.join(__dirname,'public')))
 
-app.listen(port, ()=>{
-    console.log("Server is listening from Express to 3007")
-    // console.log(__dirname)
-    // console.log(__filename)
-});
 
-// for not caching, always not modified
-app.disable('etag');
 
 
 // app.get('/', (req, res) => {
@@ -906,3 +1138,9 @@ app.use((req,res)=>{
         }
     )
 })
+
+app.listen(port, ()=>{
+    console.log("Server is listening from Express to 3007")
+    // console.log(__dirname)
+    // console.log(__filename)
+});
