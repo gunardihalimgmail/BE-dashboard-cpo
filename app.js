@@ -713,7 +713,9 @@ app.get('/company/tangki', funcMid, (req, res)=>{
 					return
 				}
 				else{
-					getData_SQL_Await('SELECT * FROM dbo.Ms_Company_Tangki where company_id = \'' + company_id + '\'').then(result=>{
+					getData_SQL_Await('SELECT mct.*, mc.company_name FROM dbo.Ms_Company_Tangki mct ' + 
+									'inner join Ms_Company mc ON mct.company_id = mc.id ' + 
+									'where mct.company_id = \'' + company_id + '\'').then(result=>{
 						if (result.length == 0){
 							res.status(200).send({
 								status: 'failed',
