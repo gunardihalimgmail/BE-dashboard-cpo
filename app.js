@@ -680,6 +680,8 @@ app.get('/company/tangki', funcMid, (req, res)=>{
 	setTimeout(()=>{
 
 		let company_id = req?.['query']?.['company_id'];
+
+		let company_id_sets;
 		
         res.setHeader("Content-Type","application/json")
         res.setHeader('Access-Control-Allow-Origin','*')
@@ -689,7 +691,10 @@ app.get('/company/tangki', funcMid, (req, res)=>{
 			try {
 				let tesNumber = !isNaN(company_id)
 
-				if (!tesNumber){
+				let findIdxSeparator = company_id.toString().indexOf(',')	// cari pemisah koma
+
+				if (!tesNumber && findIdxSeparator == -1){
+					
 					res.status(200).send({
 						status: 'failed',
 						message: 'Company ID is not type of Number !' 
@@ -704,6 +709,21 @@ app.get('/company/tangki', funcMid, (req, res)=>{
 				return
 			}
 
+			let company_id_sets = company_id.split(",");
+			let company_id_sets_final;
+			if (company_id_sets.length > 0){
+				// ambil sekumpulan company id yang bertipe number
+				company_id_sets = company_id_sets.filter((ele)=>{
+						if(ele != '' && !isNaN(ele))
+						{
+							return true
+						} 
+				})
+
+				company_id_sets = company_id_sets.map(ele=>Number(ele))
+				company_id_sets_final = company_id_sets.join(",");
+			}
+
 			setTimeout(()=>{
 				if (isEmpty(company_id)){
 					res.status(200).send({
@@ -715,7 +735,7 @@ app.get('/company/tangki', funcMid, (req, res)=>{
 				else{
 					getData_SQL_Await('SELECT mct.*, mc.company_name FROM dbo.Ms_Company_Tangki mct ' + 
 									'inner join Ms_Company mc ON mct.company_id = mc.id ' + 
-									'where mct.company_id = \'' + company_id + '\'').then(result=>{
+									'where mct.company_id in (' + company_id_sets_final + ')').then(result=>{
 						if (result.length == 0){
 							res.status(200).send({
 								status: 'failed',
