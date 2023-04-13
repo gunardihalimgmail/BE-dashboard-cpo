@@ -97,10 +97,18 @@ app.post('/login/changepwd', (req, res)=>{
 													'SET password = ENCRYPTBYASYMKEY(ASYMKEY_ID(N\'iotTIS88jkT\'),CAST(\'' + dec_chiper + '\' as nvarchar(max)))' + 
 													'WHERE username = \'' + username + '\'')
 				.then((result)=>{
+					
+					// INSERT TO LOG TABLE
+					getData_SQL_Await('INSERT INTO Tbl_Log(timestamp, username, activity) ' + 
+										'VALUES(CURRENT_TIMESTAMP, \'' + username + '\', \'Change Password\')')
+					.then((result_log)=>{
 
 							res.status(200).send({
 									status: 'Success'
 							})
+					})
+
+
 				})
 		}
 
@@ -404,9 +412,17 @@ app.post('/user/create', (req, res) => {
 								'\'' + dec_chiper_user_level +'\', GETDATE(), \''+ created_user + '\')'
 					).then((result)=>{
 
-						res.status(200).send({
-							status: 'Success'
+						// INSERT TO LOG TABLE
+						getData_SQL_Await('INSERT INTO Tbl_Log(timestamp, username, activity) ' + 
+											'VALUES(CURRENT_TIMESTAMP, \'' + created_user + '\', \'Create User for ' + username + '\')')
+						.then((result_log)=>{
+
+							res.status(200).send({
+								status: 'Success'
+							})
 						})
+
+
 						// console.log("RESULT : " + result)
 					})
 
@@ -429,7 +445,7 @@ app.post('/user/create', (req, res) => {
 		
 // UPDATE JENIS CPO / PKO
 app.post('/update/jenis', (req, res) => {
-
+	let username = req.body?.['username'] ?? '';
 	let tanggal = req.body?.['tanggal'] ?? '';
 	let company_id = req.body?.['company'] ?? '';
 	let tangki = req.body?.['tangki'] ?? '';
@@ -489,10 +505,17 @@ app.post('/update/jenis', (req, res) => {
 						getData_SQL_Await('INSERT INTO Ms_Tangki_Jenis(company_id, tanggal, tangki_name, jenis)' + 
 									'VALUES(' + company_id + ', \'' + tanggal + '\', \'' + tangki + '\',\'' + jenis + '\')'
 						).then((result)=>{
-		
-							res.status(200).send({
-								status: 'Success'
+
+							// INSERT TO LOG TABLE
+							getData_SQL_Await('INSERT INTO Tbl_Log(timestamp, username, activity) ' + 
+												'VALUES(CURRENT_TIMESTAMP, \'' + username + '\', \'Update Jenis (Insert) : ' + tanggal + '|' + company_id + '|' + tangki + '|' + jenis + '\')')
+							.then((result_log)=>{
+								
+								res.status(200).send({
+									status: 'Success'
+								})
 							})
+		
 		
 						}).catch((e)=>{
 		
@@ -517,10 +540,18 @@ app.post('/update/jenis', (req, res) => {
 							'SET jenis = \'' + jenis + '\'' + 
 							'WHERE id = ' + result[0]?.['id_tank_jenis']
 						).then((result)=>{
-		
-							res.status(200).send({
-								status: 'Success'
+
+							// INSERT TO LOG TABLE
+							getData_SQL_Await('INSERT INTO Tbl_Log(timestamp, username, activity) ' + 
+												'VALUES(CURRENT_TIMESTAMP, \'' + username + '\', \'Update Jenis (Update) : ' + tanggal + '|' + company_id + '|' + tangki + '|' + jenis + '\')')
+							.then((result_log)=>{
+
+									res.status(200).send({
+										status: 'Success'
+									})
+									
 							})
+		
 		
 						}).catch((e)=>{
 		
@@ -595,13 +626,20 @@ app.post('/login', (req, res) => {
 									})
 							}
 							else{
-								setTimeout(()=>{    
-										res.status(200).send({
-												statusCode: 200,
-												message: 'Data Valid',
-												user_level: result?.[0]?.['user_level']
-										})
-								},100)
+								// INSERT TO LOG TABLE
+								getData_SQL_Await('INSERT INTO Tbl_Log(timestamp, username, activity) ' + 
+													'VALUES(CURRENT_TIMESTAMP, \'' + username + '\', \'Login\')')
+								.then((result_log)=>{
+
+									setTimeout(()=>{
+											res.status(200).send({
+													statusCode: 200,
+													message: 'Data Valid',
+													user_level: result?.[0]?.['user_level']
+											})
+									},100)
+								})
+
 							}
 				})
 
@@ -672,6 +710,91 @@ app.get('/company', funcMid, (req,res)=>{
 			getData_SQL_Await('SELECT * FROM dbo.Ms_Company').then(result=>{
                 res.status(200).send(result)
             })
+		}
+	},100)
+})
+
+// API AMBIL MASTER SUHU 1 TITIK
+app.get('/company/tangki/suhu1titik', funcMid, (req, res)=>{
+	setTimeout(()=>{
+
+		let company_id = req?.['query']?.['company_id'];
+
+		let company_id_sets;
+		
+        res.setHeader("Content-Type","application/json")
+        res.setHeader('Access-Control-Allow-Origin','*')
+
+		if (typeof company_id != 'undefined' && company_id != null)
+		{
+			try {
+				let tesNumber = !isNaN(company_id)
+
+				let findIdxSeparator = company_id.toString().indexOf(',')	// cari pemisah koma
+
+				if (!tesNumber && findIdxSeparator == -1){
+					
+					res.status(200).send({
+						status: 'failed',
+						message: 'Company ID is not type of Number !' 
+					})
+					return
+				}
+			}catch(e){
+				res.status(200).send({
+					status: 'failed',
+					message: 'Company ID is failed !' 
+				})
+				return
+			}
+
+			let company_id_sets = company_id.split(",");
+			let company_id_sets_final;
+			if (company_id_sets.length > 0){
+				// ambil sekumpulan company id yang bertipe number
+				company_id_sets = company_id_sets.filter((ele)=>{
+						if(ele != '' && !isNaN(ele))
+						{
+							return true
+						} 
+				})
+
+				company_id_sets = company_id_sets.map(ele=>Number(ele))
+				company_id_sets_final = company_id_sets.join(",");
+			}
+
+			setTimeout(()=>{
+				if (isEmpty(company_id)){
+					res.status(200).send({
+						status: 'failed',
+						message: 'Company ID is Empty !' 
+					})
+					return
+				}
+				else{
+					getData_SQL_Await('SELECT mcts.*, mc.company_name FROM dbo.Ms_Company_Tangki_Suhu1Titik mcts ' + 
+									'inner join Ms_Company mc ON mcts.company_id = mc.id ' + 
+									'where mcts.company_id in (' + company_id_sets_final + ')').then(result=>{
+						if (result.length == 0){
+							res.status(200).send({
+								status: 'failed',
+								message: 'Company ID ' + company_id + ' Not Found' 
+							})
+							return
+						}
+						else{
+							res.status(200).send(result)
+						}
+					})
+				}
+			},70)
+		}
+		else{
+			setTimeout(()=>{
+				getData_SQL_Await('SELECT * FROM dbo.Ms_Company_Tangki_Suhu1Titik').then(result=>{
+					res.status(200).send(result)
+				})
+			},70)
 		}
 	},100)
 })
