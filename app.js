@@ -2,11 +2,11 @@ const express = require('express');
 const querystring = require('querystring');
 const url = require('url');
 const path = require('path');
-const { peoples, ages } = require('./static/people');
+// const { peoples, ages } = require('./static/people');
 const { getData_SQL_Await, getData_SQL, getData_SQL_Await_Login} = require('./static/koneksi');
 const port = process.env.PORT || 3007;
-const CryptoJS = require('crypto-js')
-const cors = require('cors')
+const CryptoJS = require('crypto-js');
+const cors = require('cors');
 
 // const sql = require('mssql')
 // const sql = require('mssql/msnodesqlv8')      // LOCALHOST
@@ -28,14 +28,34 @@ const cors = require('cors')
 //     }
 // }
 
+// // === TOKEN IMPLEMENTATION ===
+// const jwt = require('jsonwebtoken');
+// const token = jwt.sign(
+// 	{nama:'Gunardi', gender:'pria'},
+// 	'testingjwt',
+// 	{expiresIn:"30000"}
+// )
+// console.log("Token : " + token);
+
 const app = express();
 
 app.use(cors())
 const bodyParser = require('body-parser');
 const { isNumberObject } = require('util/types');
-const { isEmpty } = require('lodash');
+const { isEmpty, isObject } = require('lodash');
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: true}))
+
+// === IMPORT FILE API ===
+
+const child_Volume = require('./api/volume');
+const child_Company = require('./api/company');
+const child_CreateUser = require('./api/createuser');
+app.use('/', child_Volume);
+app.use('/', child_Company);
+app.use('/', child_CreateUser);
+
+// === end ===
 
 // for not caching, always not modified
 app.disable('etag');
@@ -263,185 +283,218 @@ app.post('/login/check', (req,res)=>{
 // 	})
 // })
 
-// CREATE NEW USER
-app.post('/user/create', (req, res) => {
-	let created_user = req.body?.['created_user'];
-	let username = req.body?.['username'];
-	let password = req.body?.['password'];
-	let chiper_code = req.body?.['chiper_code'];
-	let user_level = req.body?.['user_level'];		// new user level
-	let parent_user_level = req.body?.['parent_user_level'];		// parent user level
+// // CREATE NEW USER
+// app.post('/user/create', (req, res) => {
+// 	let created_user = req.body?.['created_user'];
+// 	let username = req.body?.['username'];
+// 	let password = req.body?.['password'];
+// 	let chiper_code = req.body?.['chiper_code'];
+// 	let user_level = req.body?.['user_level'];		// new user level
+// 	let parent_user_level = req.body?.['parent_user_level'];		// parent user level
+// 	let company = req.body?.['company'];	// company
 
-	if (typeof created_user == 'undefined'){created_user = ''}
+// 	if (typeof created_user == 'undefined'){created_user = ''}
 
-	console.log(user_level)
+// 	// console.log(user_level)
 
-	res.setHeader('Content-Type','application/json')
-    res.setHeader('Access-Control-Allow-Origin','*')
+// 	res.setHeader('Content-Type','application/json')
+//     res.setHeader('Access-Control-Allow-Origin','*')
 
-	if (username == '' || username == null ||
-        password == '' || password == null ||
-		chiper_code == '' || chiper_code == null ||
-		user_level == '' || user_level == null ||
-		parent_user_level == '' || parent_user_level == null)
-    {
-		res.status(400).send(
-			{
-				statusCode: 400,
-				message: 'Check your input such as Username, Password, Chiper Code, User Level and Parent User Level !'
-			}
-		)
-	}
-	else
-	{
+// 	if (typeof username == 'undefined' || username == '' || username == null ||
+//         typeof password == 'undefined' || password == '' || password == null ||
+// 		typeof chiper_code == 'undefined' || chiper_code == '' || chiper_code == null ||
+// 		typeof user_level == 'undefined' || user_level == '' || user_level == null ||
+// 		typeof parent_user_level == 'undefined' || parent_user_level == '' || parent_user_level == null ||
+// 		(typeof company == 'undefined' || company == null || (typeof company == 'string' && company == ''))
+// 	)
+//     {
+// 		return res.status(400).send(
+// 			{
+// 				statusCode: 400,
+// 				message: 'Check your input such as Username, Company, Password, Chiper Code, ' + 
+// 							'User Level and Parent User Level !'
+// 			}
+// 		)
+// 	}
+// 	else
+// 	{
+// 		try{
 
-		let arr_dec_chiper = [];
-		let dec_chiper = '';
+// 			let company_arr;
 
-		// CHIPER CODE
-		try {
-			dec_chiper = CryptoJS.AES.decrypt(chiper_code, "!otTIS88jkT").toString(CryptoJS.enc.Utf8)
-		}catch(e){
-			dec_chiper = '';
-		}
-		if (dec_chiper == '')
-		{
-			arr_dec_chiper = [
-				...arr_dec_chiper,
-				'Chiper Code'
-			]
-		}
+// 			// convert jadi array jika masih string
+// 			if (typeof company == 'string'){
+// 				company_arr = JSON.parse(company);
+// 			}
+// 			else if (typeof company == 'object' || 
+// 					Array.isArray(company))
+// 			{
+// 				company_arr = company;
+// 			}
 
-		// PASSWORD
-		let dec_chiper_pass = '';
-		try {
-			dec_chiper_pass = CryptoJS.AES.decrypt(password, "!otTIS88jkT").toString(CryptoJS.enc.Utf8)
-		}catch(e){
-			dec_chiper_pass = '';
-		}
-		if (dec_chiper_pass == '')
-		{
-			arr_dec_chiper = [
-				...arr_dec_chiper,
-				'Password'
-			]
-		}
+// 			if (company_arr.length == 0){
+				
+// 				return res.status(400).send({
+// 					statusCode: 400,
+// 					message: 'Company can\'t be empty !'
+// 				})
+// 			}
 
-		// USER LEVEL
-		let dec_chiper_user_level = '';
-		try {
-			dec_chiper_user_level = CryptoJS.AES.decrypt(user_level, "!otTIS88jkT").toString(CryptoJS.enc.Utf8)
-		}catch(e){
-			dec_chiper_user_level = '';
-		}
-		if (dec_chiper_user_level == '')
-		{
-			arr_dec_chiper = [
-				...arr_dec_chiper,
-				'User Level'
-			]
-		}
+// 		}
+// 		catch(e){
+// 			return res.status(400).send({
+// 				statusCode: 400,
+// 				message: 'Check your Company input, it must be Array Type !'
+// 			})
+// 		}
 
-		// PARENT USER LEVEL
-		let dec_chiper_parent_user_level = '';
-		try {
-			dec_chiper_parent_user_level = CryptoJS.AES.decrypt(parent_user_level, "!otTIS88jkT").toString(CryptoJS.enc.Utf8)
-		}catch(e){
-			dec_chiper_parent_user_level = '';
-		}
-		if (dec_chiper_parent_user_level == '')
-		{
-			arr_dec_chiper = [
-				...arr_dec_chiper,
-				'Parent User Level'
-			]
-		}
+// 		let arr_dec_chiper = [];
+// 		let dec_chiper = '';
 
-		let join_dec_chiper = '';
-		// join_dec_chiper = arr_dec_chiper.join(' and ')
-		join_dec_chiper = arr_dec_chiper.join(', ')
-		join_dec_chiper = join_dec_chiper.replace(/, ([^,]*)$/g,' and $1')
-		if (join_dec_chiper != '')
-		{
-			// PERIKSA APA ADA CHIPER YANG ERROR / TIDAK BISA DI DEKRIPSI
-			// console.log(join_dec_chiper)
-			obj_result = {
-				status: 'Failed',
-				message: join_dec_chiper + ' got encryption error !'
-			}
-			res.status(400).send(
-				{...obj_result}
-			)
-			return
-		}
+// 		// CHIPER CODE
+// 		try {
+// 			dec_chiper = CryptoJS.AES.decrypt(chiper_code, "!otTIS88jkT").toString(CryptoJS.enc.Utf8)
+// 		}catch(e){
+// 			dec_chiper = '';
+// 		}
+// 		if (dec_chiper == '')
+// 		{
+// 			arr_dec_chiper = [
+// 				...arr_dec_chiper,
+// 				'Chiper Code'
+// 			]
+// 		}
+
+// 		// PASSWORD
+// 		let dec_chiper_pass = '';
+// 		try {
+// 			dec_chiper_pass = CryptoJS.AES.decrypt(password, "!otTIS88jkT").toString(CryptoJS.enc.Utf8)
+// 		}catch(e){
+// 			dec_chiper_pass = '';
+// 		}
+// 		if (dec_chiper_pass == '')
+// 		{
+// 			arr_dec_chiper = [
+// 				...arr_dec_chiper,
+// 				'Password'
+// 			]
+// 		}
+
+// 		// USER LEVEL
+// 		let dec_chiper_user_level = '';
+// 		try {
+// 			dec_chiper_user_level = CryptoJS.AES.decrypt(user_level, "!otTIS88jkT").toString(CryptoJS.enc.Utf8)
+// 		}catch(e){
+// 			dec_chiper_user_level = '';
+// 		}
+// 		if (dec_chiper_user_level == '')
+// 		{
+// 			arr_dec_chiper = [
+// 				...arr_dec_chiper,
+// 				'User Level'
+// 			]
+// 		}
+
+// 		// PARENT USER LEVEL
+// 		let dec_chiper_parent_user_level = '';
+// 		try {
+// 			dec_chiper_parent_user_level = CryptoJS.AES.decrypt(parent_user_level, "!otTIS88jkT").toString(CryptoJS.enc.Utf8)
+// 		}catch(e){
+// 			dec_chiper_parent_user_level = '';
+// 		}
+// 		if (dec_chiper_parent_user_level == '')
+// 		{
+// 			arr_dec_chiper = [
+// 				...arr_dec_chiper,
+// 				'Parent User Level'
+// 			]
+// 		}
+
+// 		let join_dec_chiper = '';
+// 		// join_dec_chiper = arr_dec_chiper.join(' and ')
+// 		join_dec_chiper = arr_dec_chiper.join(', ')
+// 		join_dec_chiper = join_dec_chiper.replace(/, ([^,]*)$/g,' and $1')
+// 		if (join_dec_chiper != '')
+// 		{
+// 			// PERIKSA APA ADA CHIPER YANG ERROR / TIDAK BISA DI DEKRIPSI
+// 			// console.log(join_dec_chiper)
+// 			obj_result = {
+// 				status: 'Failed',
+// 				message: join_dec_chiper + ' got encryption error !'
+// 			}
+// 			res.status(400).send(
+// 				{...obj_result}
+// 			)
+// 			return
+// 		}
 
 
-		if (dec_chiper_parent_user_level == 'USER'){
-			// jika user level dari parent adalah 'USER', maka account baru tidak bisa di create
-			res.status(400).send(
-				{
-					status: 'Failed',
-					message: 'You can\'t create new account for level \'USER\' !'
-				}
-			)
-			return
-		}
+// 		if (dec_chiper_parent_user_level == 'USER'){
+// 			// jika user level dari parent adalah 'USER', maka account baru tidak bisa di create
+// 			res.status(400).send(
+// 				{
+// 					status: 'Failed',
+// 					message: 'You can\'t create new account for level \'USER\' !'
+// 				}
+// 			)
+// 			return
+// 		}
 
-		getData_SQL_Await('SELECT username, user_level FROM Ms_Login WHERE username = \'' + username +'\''
-		).then((result)=>{
+// 		getData_SQL_Await('SELECT username, user_level FROM Ms_Login WHERE username = \'' + username +'\''
+// 		).then((result)=>{
 		
-			// JIKA USERNAME SUDAH ADA, MAKA FAILED
-				if (result.length != 0)
-				{
-						obj_result = {
-								status: 'Failed',
-								message: 'Username ' + username +' is exists !'
-						}
-						res.status(400).send(
-							{
-								...obj_result
-							}
-						)
-				}
-				else{
+// 			// JIKA USERNAME SUDAH ADA, MAKA FAILED
+// 				if (result.length != 0)
+// 				{
+// 						obj_result = {
+// 								status: 'Failed',
+// 								message: 'Username ' + username +' is exists !'
+// 						}
+// 						res.status(400).send(
+// 							{
+// 								...obj_result
+// 							}
+// 						)
+// 				}
+// 				else{
 					
-					getData_SQL_Await('INSERT INTO Ms_Login(' + 
-								'username, password, user_level, created_date, created_user)' + 
-							'VALUES(' + 
-								'\'' + username + '\', ENCRYPTBYASYMKEY(ASYMKEY_ID(\'iotTIS88jkT\'), CAST(\'' + dec_chiper_pass + '\' AS NVARCHAR(MAX))),' +
-								'\'' + dec_chiper_user_level +'\', GETDATE(), \''+ created_user + '\')'
-					).then((result)=>{
+// 					return res.status(200).send({'status':'berhasil'});
 
-						// INSERT TO LOG TABLE
-						getData_SQL_Await('INSERT INTO Tbl_Log(timestamp, username, activity) ' + 
-											'VALUES(CURRENT_TIMESTAMP, \'' + created_user + '\', \'Create User for ' + username + '\')')
-						.then((result_log)=>{
+// 					return
+// 					getData_SQL_Await('INSERT INTO Ms_Login(' + 
+// 								'username, password, user_level, created_date, created_user)' + 
+// 							'VALUES(' + 
+// 								'\'' + username + '\', ENCRYPTBYASYMKEY(ASYMKEY_ID(\'iotTIS88jkT\'), CAST(\'' + dec_chiper_pass + '\' AS NVARCHAR(MAX))),' +
+// 								'\'' + dec_chiper_user_level +'\', GETDATE(), \''+ created_user + '\')'
+// 					).then((result)=>{
 
-							res.status(200).send({
-								status: 'Success'
-							})
-						})
+// 						// INSERT TO LOG TABLE
+// 						getData_SQL_Await('INSERT INTO Tbl_Log(timestamp, username, activity) ' + 
+// 											'VALUES(CURRENT_TIMESTAMP, \'' + created_user + '\', \'Create User for ' + username + '\')')
+// 						.then((result_log)=>{
 
+// 							res.status(200).send({
+// 								status: 'Success'
+// 							})
+// 						})
+// 					})
 
-						// console.log("RESULT : " + result)
-					})
-
-					// res.status(200).send(
-					// 	{
-					// 		created_user,
-					// 		username,
-					// 		dec_chiper_pass,
-					// 		dec_chiper,
-					// 		dec_chiper_user_level
-					// 	}	
-					// )
-				}
-			}
-		)
+// 					// res.status(200).send(
+// 					// 	{
+// 					// 		created_user,
+// 					// 		username,
+// 					// 		dec_chiper_pass,
+// 					// 		dec_chiper,
+// 					// 		dec_chiper_user_level
+// 					// 	}	
+// 					// )
+// 				}
+// 			}
+// 		)
 
 		
-	}
-})
+// 	}
+// })
 		
 // UPDATE JENIS CPO / PKO
 app.post('/update/jenis', (req, res) => {
@@ -649,70 +702,70 @@ app.post('/login', (req, res) => {
 // ... end <LOGIN>
 
 
-app.get('/volume',funcMid, (req,res)=>{
+// app.get('/volume',funcMid, (req,res)=>{
 
-    setTimeout(()=>{
-        let tangki = req?.['query']?.['tangki'];
+//     setTimeout(()=>{
+//         let tangki = req?.['query']?.['tangki'];
     
-        res.setHeader("Content-Type","application/json")
-        res.setHeader('Access-Control-Allow-Origin','*')
+//         res.setHeader("Content-Type","application/json")
+//         res.setHeader('Access-Control-Allow-Origin','*')
     
-        if (typeof tangki != 'undefined' && tangki != null)
-        {
-            if (tangki < 1 || tangki > 4){
-                res.status(404).send({
-                    statusCode: 404,
-                    message:'Tangki ' + tangki + ' Not Found'
-                })
-                return
-            }
-            else{
-                getData_SQL_Await('SELECT * FROM dbo.Ms_Volume_Tangki WHERE tangki = \'' + tangki + '\'').then(result=>{
-                    res.status(200).send(result)
-                })
-            }
-        }
-        else{
-            getData_SQL_Await('SELECT * FROM dbo.Ms_Volume_Tangki').then(result=>{
-                res.status(200).send(result)
-            })
-        }
-    },100)
-})
+//         if (typeof tangki != 'undefined' && tangki != null)
+//         {
+//             if (tangki < 1 || tangki > 4){
+//                 res.status(404).send({
+//                     statusCode: 404,
+//                     message:'Tangki ' + tangki + ' Not Found'
+//                 })
+//                 return
+//             }
+//             else{
+//                 getData_SQL_Await('SELECT * FROM dbo.Ms_Volume_Tangki WHERE tangki = \'' + tangki + '\'').then(result=>{
+//                     res.status(200).send(result)
+//                 })
+//             }
+//         }
+//         else{
+//             getData_SQL_Await('SELECT * FROM dbo.Ms_Volume_Tangki').then(result=>{
+//                 res.status(200).send(result)
+//             })
+//         }
+//     },100)
+// })
 
-app.get('/company', funcMid, (req,res)=>{
-	setTimeout(()=>{
-		let id = req?.['query']?.['id'];
+// app.get('/company', funcMid, (req,res)=>{
+// 	setTimeout(()=>{
+// 		let id = req?.['query']?.['id'];
     
-        res.setHeader("Content-Type","application/json")
-        res.setHeader('Access-Control-Allow-Origin','*')
+//         res.setHeader("Content-Type","application/json")
+//         res.setHeader('Access-Control-Allow-Origin','*')
 
-		if (typeof id != 'undefined' && id != null)
-        {
-			getData_SQL_Await('SELECT * FROM dbo.Ms_Company where id = ' + id).then(result=>{
-				if (result.length == 0){
-					res.status(200).send({
-						status: 'failed',
-						message: 'Company ID ' + id + ' Not Found' 
-					})
-				}
-				else{
-					res.status(200).send(result)
-				}
-            })
+// 		if (typeof id != 'undefined' && id != null)
+//         {
+// 			getData_SQL_Await('SELECT * FROM dbo.Ms_Company where id = ' + id).then(result=>{
+// 				if (result.length == 0){
+// 					res.status(200).send({
+// 						status: 'failed',
+// 						message: 'Company ID ' + id + ' Not Found' 
+// 					})
+// 				}
+// 				else{
+// 					res.status(200).send(result)
+// 				}
+//             })
 
-			// res.status(404).send({
-			// 	statusCode: 404,
-			// 	message:'Company ' + company + ' Not Found'
-			// })
-		}
-		else{
-			getData_SQL_Await('SELECT * FROM dbo.Ms_Company').then(result=>{
-                res.status(200).send(result)
-            })
-		}
-	},100)
-})
+// 			// res.status(404).send({
+// 			// 	statusCode: 404,
+// 			// 	message:'Company ' + company + ' Not Found'
+// 			// })
+// 		}
+// 		else{
+// 			getData_SQL_Await('SELECT * FROM dbo.Ms_Company').then(result=>{
+//                 res.status(200).send(result)
+//             })
+// 		}
+// 	},100)
+// })
 
 // API AMBIL MASTER SUHU 1 TITIK
 app.get('/company/tangki/suhu1titik', funcMid, (req, res)=>{

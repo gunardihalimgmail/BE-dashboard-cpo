@@ -1,5 +1,8 @@
 const sql = require('mssql/msnodesqlv8')      // LOCALHOST
 
+// read file .env (variables)
+require("dotenv").config();
+
 const sqlConfig_local = {
     driver:"SQL Server",
     server:".\\SQLEXPRESS",
@@ -10,6 +13,7 @@ const sqlConfig_local = {
     // trusted_connection:true
 }
 
+// LIVE
 const sqlConfig_Server = {
     user: process.env.DB_USER || 'loginiot',
     password: process.env.DB_PWD || '!otTIS88jkT',
