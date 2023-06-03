@@ -6,6 +6,21 @@ const child = express.Router();
 // middleware (termasuk jika ingin memasukkan logic webtoken)
 const funcMid = require('./middleware');
 
+const func_Return_Response = (res, statusSuccess = 0|1, statusCode, message) => {
+	let status_description;
+	if (statusSuccess == 0){
+		status_description = 'failed';
+	}else if (statusSuccess == 1){status_description = 'success'}
+
+	return res.status(statusCode).send(
+		{
+			status: status_description,
+			statusCode,
+			message
+		}
+	)
+}
+
 // GET LOGIN
 child.post('/login', funcMid, async (req, res) => {
 
@@ -18,20 +33,50 @@ child.post('/login', funcMid, async (req, res) => {
     if (username == '' || username == null ||
         password == '' || password == null)
     {
-				res.status(400).send(
-					{
-						statusCode: 400,
-						message: 'No Result'
-					}
-				)
+			func_Return_Response(res, 0, 400, 'No Result')
     }
 
 		else{
 				// === COMPANY ID ===
 
+				let level_user;
+				let isUserExists = false;
+
+				await getData_SQL_Await('SELECT username, user_level FROM Ms_Login WHERE username = \'' + username + '\'')
+				.then((result_level)=>{
+
+					if (typeof result_level != 'undefined' && result_level != null){
+						if (result_level.length > 0){
+
+							isUserExists = true;
+							level_user = result_level?.[0]?.['user_level'];
+						}else{
+							isUserExists = false;
+						}
+						
+					}
+				})
+				if (!isUserExists){
+					return func_Return_Response(res, 0, 400, 'Username \'' + username + '\' Is Unidentified !')
+				}
+
+				if (typeof level_user == 'undefined' || level_user == null || level_user == ''){
+					return func_Return_Response(res, 0, 400, 'Check Level User for username \'' + username + '\'')
+				}
+
+
 				let company_id_arr = [];
 				// array company id => [1,2,3]
-				await getData_SQL_Await('SELECT DISTINCT company_id FROM Ms_User_Company WHERE username = \'' + username + '\'')
+
+				let query = '';
+				// khusus level 'ADMIN' otomatis dapat semua privileges company
+				if (level_user == 'ADMIN'){
+					query = 'SELECT DISTINCT company_id FROM Ms_User_Company';
+				}else{
+					query = 'SELECT DISTINCT company_id FROM Ms_User_Company WHERE username = \'' + username + '\'';
+				}
+
+				await getData_SQL_Await(query)
 				.then((result) => {
 					if (typeof result != 'undefined' && result != null){
 						if (result.length > 0){
@@ -46,11 +91,7 @@ child.post('/login', funcMid, async (req, res) => {
 
 				// periksa jika tidak ada company apapun untuk user bersangkutan, maka tidak dikasih akses untuk masuk
 				if (company_id_arr.length == 0){
-					return res.status(400).send({
-						status: 'failed',
-						statusCode: 400,
-						message: 'No Access for Any Company'
-					})
+					return func_Return_Response(res, 0, 400, 'No Access for Any Company')
 				}
 				// ==== end ====
 
@@ -78,17 +119,13 @@ child.post('/login', funcMid, async (req, res) => {
 
 				// periksa jika tidak ada device id apapun untuk user bersangkutan, maka tidak dikasih akses untuk masuk
 				if (device_id_arr.length == 0){
-					return res.status(400).send({
-						status: 'failed',
-						statusCode: 400,
-						message: 'No Access for Any Device'
-					})
+					return func_Return_Response(res, 0, 400, 'No Access for Any Company')
 				}
 				// ==== end ====
 
 
 				// === COMPANY SELECT ARRAY (FOR DROPDOWN IN CLIENT) ===
-				
+
 				let company_select_arr = [];
 				// example : [{value:1, label:'PT. TASK 3'}, {value:2, label:'PT. TASK 1'}]
 				await getData_SQL_Await('SELECT * FROM Ms_Company WHERE id in(' + company_id_arr_join + ')')
@@ -114,11 +151,7 @@ child.post('/login', funcMid, async (req, res) => {
 						
 							if (typeof result?.[0] == 'undefined' || result?.[0] == null)
 							{
-									res.status(400).send({
-										status: 'failed',
-										statusCode: 400,
-										message: 'No Result'
-									})
+								func_Return_Response(res, 0, 400, 'Check your Credential');
 							}
 							else{
 
@@ -128,14 +161,15 @@ child.post('/login', funcMid, async (req, res) => {
 								.then((result_log)=>{
 
 									setTimeout(()=>{
-											res.status(200).send({
-													statusCode: 200,
-													message: 'Data Valid',
-													user_level: result?.[0]?.['user_level'],
-													company_id: [...company_id_arr],
-													company_select: [...company_select_arr],
-													device_id: [...device_id_arr]
-											})
+										res.status(200).send({
+											statusCode: 200,
+											message: 'Data Valid',
+											username,
+											user_level: result?.[0]?.['user_level'],
+											company_id: [...company_id_arr],
+											company_select: [...company_select_arr],
+											device_id: [...device_id_arr]
+										})
 									},100)
 								})
 
