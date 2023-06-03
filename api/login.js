@@ -27,6 +27,8 @@ child.post('/login', funcMid, async (req, res) => {
     }
 
 		else{
+				// === COMPANY ID ===
+
 				let company_id_arr = [];
 				// array company id => [1,2,3]
 				await getData_SQL_Await('SELECT DISTINCT company_id FROM Ms_User_Company WHERE username = \'' + username + '\'')
@@ -50,10 +52,13 @@ child.post('/login', funcMid, async (req, res) => {
 						message: 'No Access for Any Company'
 					})
 				}
+				// ==== end ====
 
 				// join semua company arr (e.g => in(1,2,3))
 				let company_id_arr_join;
 				company_id_arr_join = company_id_arr.join(",");
+
+				// === DEVICE ID ===
 
 				let device_id_arr = [];
 				// ['TANK12_HP_PAMALIAN','TANK34_HP_PAMALIAN']
@@ -79,8 +84,11 @@ child.post('/login', funcMid, async (req, res) => {
 						message: 'No Access for Any Device'
 					})
 				}
+				// ==== end ====
 
 
+				// === COMPANY SELECT ARRAY (FOR DROPDOWN IN CLIENT) ===
+				
 				let company_select_arr = [];
 				// example : [{value:1, label:'PT. TASK 3'}, {value:2, label:'PT. TASK 1'}]
 				await getData_SQL_Await('SELECT * FROM Ms_Company WHERE id in(' + company_id_arr_join + ')')
@@ -96,19 +104,7 @@ child.post('/login', funcMid, async (req, res) => {
 						}
 					}
 				})
-
-				await getData_SQL_Await('SELECT distinct id_device FROM Ms_Company_Tangki WHERE company_id in(' + company_id_arr_join + ')')
-				.then((result_device)=>{
-					if (typeof result_device != 'undefined' && result_device != null){
-						if (result_device.length > 0){
-							// map dulu untuk bentuk jadi array satu dimensi (e.g. ['TANK12_HP_PAMALIAN','TANK34_HP_PAMALIAN']), 
-							// kemudian filter hanya ambil yang tidak null
-							device_id_arr = result_device.map((device,idx)=>{
-									return device?.['id_device']
-							}).filter(Boolean);
-						}
-					}
-				})
+				// ==== end ====
 				
 				getData_SQL_Await('SELECT * FROM (SELECT username, password, cast(decryptbyasymkey(ASYMKEY_ID(N\'iotTIS88jkT\'), password) as nvarchar(max))' + 
 												'as pass_dec, user_level FROM Ms_Login WHERE username = \'' + username + '\'' + 
