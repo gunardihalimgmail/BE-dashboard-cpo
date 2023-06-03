@@ -35,6 +35,7 @@ child.post('/user/create', funcMid, async (req, res) => {
 		{
 			return res.status(400).send(
 				{
+					status:'failed',
 					statusCode: 400,
 					message: 'Check your input such as Username, Company, Password, Chiper Code, ' + 
 								'User Level and Parent User Level !'
@@ -59,6 +60,7 @@ child.post('/user/create', funcMid, async (req, res) => {
 				if (company_arr.length == 0){
 					
 					return res.status(400).send({
+						status:'failed',
 						statusCode: 400,
 						message: 'Company can\'t be empty !'
 					})
@@ -82,6 +84,7 @@ child.post('/user/create', funcMid, async (req, res) => {
 
 				if (!isExistsDataCompany){
 					return res.status(400).send({
+						status:'failed',
 						statusCode: 400,
 						message: 'There are one or more Companies not exists in database !'
 					})
@@ -89,6 +92,7 @@ child.post('/user/create', funcMid, async (req, res) => {
 			}
 			catch(e){
 				return res.status(400).send({
+					status:'failed',
 					statusCode: 400,
 					message: 'Check your Company input, it must be Array Type !'
 				})
@@ -174,6 +178,7 @@ child.post('/user/create', funcMid, async (req, res) => {
 				// console.log(join_dec_chiper)
 				obj_result = {
 					status: 'Failed',
+					statusCode: 400,
 					message: join_dec_chiper + ' got encryption error !'
 				}
 				res.status(400).send(
@@ -188,6 +193,7 @@ child.post('/user/create', funcMid, async (req, res) => {
 				res.status(400).send(
 					{
 						status: 'Failed',
+						statusCode: 400,
 						message: 'You can\'t create new account for level \'USER\' !'
 					}
 				)
@@ -202,6 +208,7 @@ child.post('/user/create', funcMid, async (req, res) => {
 					{
 							obj_result = {
 									status: 'Failed',
+									statusCode: 400,
 									message: 'Username ' + username +' is exists !'
 							}
 							res.status(400).send(

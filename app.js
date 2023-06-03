@@ -48,9 +48,11 @@ app.use(bodyParser.urlencoded({extended: true}))
 
 // === IMPORT FILE API ===
 
+const child_login = require('./api/login');
 const child_Volume = require('./api/volume');
 const child_Company = require('./api/company');
 const child_CreateUser = require('./api/createuser');
+app.use('/', child_login);
 app.use('/', child_Volume);
 app.use('/', child_Company);
 app.use('/', child_CreateUser);
@@ -639,67 +641,6 @@ app.post('/update/jenis', (req, res) => {
 
 
 })
-
-
-
-
-// GET LOGIN
-app.post('/login', (req, res) => {
-
-    let username = req.body?.['username'];
-    let password = req.body?.['password'];
-
-	res.setHeader('Content-Type','application/json')
-    res.setHeader('Access-Control-Allow-Origin','*')
-
-    if (username == '' || username == null ||
-        password == '' || password == null)
-    {
-				res.status(400).send(
-					{
-						statusCode: 400,
-						message: 'No Result'
-					}
-				)
-    }
-
-		else{
-
-				getData_SQL_Await('SELECT * FROM (SELECT username, password, cast(decryptbyasymkey(ASYMKEY_ID(N\'iotTIS88jkT\'), password) as nvarchar(max))' + 
-												'as pass_dec, user_level FROM Ms_Login WHERE username = \'' + username + '\'' + 
-												') AS TEMP ' + 
-												'WHERE pass_dec = \'' + password + '\''
-				).then((result)=>{
-						
-							if (typeof result?.[0] == 'undefined' || result?.[0] == null)
-							{
-									res.status(400).send({
-										statusCode: 400,
-										message: 'No Result'
-									})
-							}
-							else{
-								// INSERT TO LOG TABLE
-								getData_SQL_Await('INSERT INTO Tbl_Log(timestamp, username, activity) ' + 
-													'VALUES(CURRENT_TIMESTAMP, \'' + username + '\', \'Login\')')
-								.then((result_log)=>{
-
-									setTimeout(()=>{
-											res.status(200).send({
-													statusCode: 200,
-													message: 'Data Valid',
-													user_level: result?.[0]?.['user_level']
-											})
-									},100)
-								})
-
-							}
-				})
-
-
-		}
-})
-// ... end <LOGIN>
 
 
 // app.get('/volume',funcMid, (req,res)=>{
