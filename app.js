@@ -806,7 +806,7 @@ app.get('/company/tangki', funcMid, (req, res)=>{
 		if (typeof company_id != 'undefined' && company_id != null)
 		{
 			try {
-				let tesNumber = !isNaN(company_id)
+				let tesNumber = !isNaN(company_id)		// jika angka maka true
 
 				let findIdxSeparator = company_id.toString().indexOf(',')	// cari pemisah koma
 
@@ -819,8 +819,9 @@ app.get('/company/tangki', funcMid, (req, res)=>{
 					return
 				}
 			}catch(e){
-				res.status(200).send({
+				res.status(400).send({
 					status: 'failed',
+					statusCode: 400,
 					message: 'Company ID is failed !' 
 				})
 				return
@@ -850,10 +851,35 @@ app.get('/company/tangki', funcMid, (req, res)=>{
 					return
 				}
 				else{
-					getData_SQL_Await('SELECT mct.*, mc.company_name FROM dbo.Ms_Company_Tangki mct ' + 
-									'inner join Ms_Company mc ON mct.company_id = mc.id ' + 
-									'where mct.company_id in (' + company_id_sets_final + ')').then(result=>{
+					// jika jumlah company = 1, maka menggunakan multi color per tangki (ms_company_tangki -> bg_color)
+					// jika jumlah company > 1, maka menggunakan single color per company (ms_company -> bg_color)
+					let qry = '';
+					qry = 'WITH tmp_comptank AS (' + 
+							'SELECT mc.bg_color as bg_color_company, ' + 
+							'mc.company_name as company_name,' + 
+							'mct.* ' +
+							'FROM dbo.Ms_Company_Tangki mct ' + 
+							'INNER JOIN Ms_Company mc ON mct.company_id = mc.id ' + 
+							'WHERE mct.company_id in (' + company_id_sets_final +')' + 
+						'), tmp_comptank_count AS (' + 
+							'SELECT COUNT(DISTINCT company_id) AS comp_count FROM tmp_comptank' + 
+						') ' +  
+						'SELECT	a.api, a.bg_color as bg_color_tangki, a.bg_color_company, ' + 
+							'CASE WHEN b.comp_count = 1 THEN bg_color ELSE bg_color_company END as bg_color, ' + 
+							'a.company_id, a.company_name, a.tangki_id, a.tangki_name, a.id_device, ' + 
+							'a.tinggi_tangki, a.tinggi_delta, a.tinggi_profile, a.tinggi_kalibrasi, ' + 
+							'a.volume_maks, a.centroid_lng, a.centroid_lat, a.centroid_text_lng, a.centroid_text_lat ' + 
+							'FROM tmp_comptank a ' + 
+							'CROSS JOIN tmp_comptank_count b';
+
+					// getData_SQL_Await('SELECT mct.*, mc.company_name FROM dbo.Ms_Company_Tangki mct ' + 
+					// 				'inner join Ms_Company mc ON mct.company_id = mc.id ' + 
+					// 				'where mct.company_id in (' + company_id_sets_final + ')').then(result=>{
+
+					getData_SQL_Await(qry).then(result=>{
+
 						if (result.length == 0){
+
 							res.status(200).send({
 								status: 'failed',
 								message: 'Company ID ' + company_id + ' Not Found' 

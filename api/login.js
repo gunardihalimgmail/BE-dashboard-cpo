@@ -71,7 +71,7 @@ child.post('/login', funcMid, async (req, res) => {
 				let query = '';
 				// khusus level 'ADMIN' otomatis dapat semua privileges company
 				if (level_user == 'ADMIN'){
-					query = 'SELECT DISTINCT company_id FROM Ms_User_Company';
+					query = 'SELECT DISTINCT id as company_id FROM Ms_Company';
 				}else{
 					query = 'SELECT DISTINCT company_id FROM Ms_User_Company WHERE username = \'' + username + '\'';
 				}
@@ -91,7 +91,12 @@ child.post('/login', funcMid, async (req, res) => {
 
 				// periksa jika tidak ada company apapun untuk user bersangkutan, maka tidak dikasih akses untuk masuk
 				if (company_id_arr.length == 0){
-					return func_Return_Response(res, 0, 400, 'No Access for Any Company')
+					if (level_user == 'ADMIN'){
+						return func_Return_Response(res, 0, 400, 'No Company That Has Been Registered')
+					}
+					else{
+						return func_Return_Response(res, 0, 400, 'No Access for Any Company')
+					}
 				}
 				// ==== end ====
 
