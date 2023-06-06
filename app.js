@@ -52,10 +52,12 @@ const child_login = require('./api/login');
 const child_Volume = require('./api/volume');
 const child_Company = require('./api/company');
 const child_CreateUser = require('./api/createuser');
+const child_ListUser = require('./api/listuser');
 app.use('/', child_login);
 app.use('/', child_Volume);
 app.use('/', child_Company);
 app.use('/', child_CreateUser);
+app.use('/', child_ListUser);
 
 // === end ===
 
