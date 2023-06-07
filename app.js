@@ -53,11 +53,15 @@ const child_Volume = require('./api/volume');
 const child_Company = require('./api/company');
 const child_CreateUser = require('./api/createuser');
 const child_ListUser = require('./api/listuser');
+const child_UpdateUserCompany = require('./api/updateUserCompany');
+const child_GetListCompanyByUser = require('./api/getListCompanyByUser');
 app.use('/', child_login);
 app.use('/', child_Volume);
 app.use('/', child_Company);
 app.use('/', child_CreateUser);
 app.use('/', child_ListUser);
+app.use('/', child_UpdateUserCompany);
+app.use('/', child_GetListCompanyByUser);
 
 // === end ===
 
