@@ -219,15 +219,17 @@ child.post('/user/create', funcMid, async (req, res) => {
 					}
 					else{
 
-						// return res.status(200).send({'status':'berhasil'});
+						// encrypt pakai Sha256
+						let pass_sha256 = CryptoJS.SHA256(dec_chiper_pass).toString();
 
 						getData_SQL_Await('INSERT INTO Ms_Login(' + 
 									'username, password, user_level, created_date, created_user)' + 
-								'VALUES(' + 
-									'\'' + username + '\', ENCRYPTBYASYMKEY(ASYMKEY_ID(\'iotTIS88jkT\'), CAST(\'' + dec_chiper_pass + '\' AS NVARCHAR(MAX))),' +
+									'VALUES(' + 
+									// '\'' + username + '\', ENCRYPTBYASYMKEY(ASYMKEY_ID(\'iotTIS88jkT\'), CAST(\'' + dec_chiper_pass + '\' AS NVARCHAR(MAX))),' +
+									'\'' + username + '\',CAST(\'' + pass_sha256 + '\' as VARBINARY),' +
 									'\'' + dec_chiper_user_level +'\', GETDATE(), \''+ created_user + '\')'
 						).then((result)=>{
-							
+
 							// ('abc',1),('def',2)
 							let company_ins_tmp = ''
 							for (let companyid of company_arr){
@@ -237,18 +239,18 @@ child.post('/user/create', funcMid, async (req, res) => {
 							company_ins_tmp = company_ins_tmp.substring(0, company_ins_tmp.length-1)
 
 							getData_SQL_Await('INSERT INTO Ms_User_Company(username, company_id) VALUES ' + company_ins_tmp)
-							.then((result_user_company)=>{
+								.then((result_user_company)=>{
 
-								// INSERT TO LOG TABLE
-								getData_SQL_Await('INSERT INTO Tbl_Log(timestamp, username, activity) ' + 
-													'VALUES(CURRENT_TIMESTAMP, \'' + created_user + '\', \'Create User for ' + username + '\')')
-								.then((result_log)=>{
+									// INSERT TO LOG TABLE
+									getData_SQL_Await('INSERT INTO Tbl_Log(timestamp, username, activity) ' + 
+														'VALUES(CURRENT_TIMESTAMP, \'' + created_user + '\', \'Create User for ' + username + '\')')
+									.then((result_log)=>{
 	
-									res.status(200).send({
-										status: 'Success'
+										res.status(200).send({
+											status: 'Success'
+										})
 									})
 								})
-							})
 						})
 
 						// res.status(200).send(
@@ -261,8 +263,7 @@ child.post('/user/create', funcMid, async (req, res) => {
 						// 	}	
 						// )
 					}
-				}
-			)
+			})
 
 			
 		}

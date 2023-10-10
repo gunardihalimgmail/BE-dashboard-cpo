@@ -127,8 +127,12 @@ app.post('/login/changepwd', (req, res)=>{
 						return
 				}
 
+				let pass_sha256 = CryptoJS.SHA256(dec_chiper).toString();
+				console.log(pass_sha256);
+
 				getData_SQL_Await('UPDATE Ms_Login ' + 
-													'SET password = ENCRYPTBYASYMKEY(ASYMKEY_ID(N\'iotTIS88jkT\'),CAST(\'' + dec_chiper + '\' as nvarchar(max)))' + 
+													// 'SET password = ENCRYPTBYASYMKEY(ASYMKEY_ID(N\'iotTIS88jkT\'),CAST(\'' + dec_chiper + '\' as nvarchar(max)))' + 
+													'SET password = CAST(\'' + pass_sha256 + '\'' + ' ' + ' as VARBINARY)' + 
 													'WHERE username = \'' + username + '\'')
 				.then((result)=>{
 					
@@ -253,10 +257,15 @@ app.post('/login/check', (req,res)=>{
 
 		// CAST AS VARCHAR(MAX) => UNTUK LOCALHOST
 		// CAST AS NVARCHAR(MAX) => UNTUK SERVER 192.168.1.120
-		getData_SQL_Await('SELECT * FROM (SELECT username, password, cast(decryptbyasymkey(ASYMKEY_ID(N\'iotTIS88jkT\'), password) as nvarchar(max))' + 
-												'as pass_dec, user_level FROM Ms_Login WHERE username = \'' + username + '\'' + 
-												') AS TEMP ' + 
-												'WHERE pass_dec = \'' + dec_chiper_pass + '\''
+		let pass_sha256 = CryptoJS.SHA256(dec_chiper_pass).toString();
+		console.log(pass_sha256);
+
+		getData_SQL_Await('SELECT * FROM (SELECT username, password ' + 
+						// cast(decryptbyasymkey(ASYMKEY_ID(N\'iotTIS88jkT\'), password) as nvarchar(max))' + 
+							', user_level FROM Ms_Login WHERE username = \'' + username + '\'' + 
+							') AS TEMP ' + 
+							// 'WHERE pass_dec = \'' + dec_chiper_pass + '\''
+							'WHERE password = CAST(\'' + pass_sha256 + '\'' + ' ' + ' as VARBINARY)'
 				).then((result)=>{
 				
 					if (result.length == 0)

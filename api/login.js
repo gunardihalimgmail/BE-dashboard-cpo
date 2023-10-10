@@ -1,5 +1,6 @@
 const express = require('express');
 const { getData_SQL_Await }  = require('../static/koneksi')
+const CryptoJS = require('crypto-js')
 
 const child = express.Router();
 
@@ -148,12 +149,20 @@ child.post('/login', funcMid, async (req, res) => {
 				})
 				// ==== end ====
 				
-				getData_SQL_Await('SELECT * FROM (SELECT username, password, cast(decryptbyasymkey(ASYMKEY_ID(N\'iotTIS88jkT\'), password) as nvarchar(max))' + 
-												'as pass_dec, user_level FROM Ms_Login WHERE username = \'' + username + '\'' + 
+				// getData_SQL_Await('SELECT * FROM (SELECT username, password, cast(decryptbyasymkey(ASYMKEY_ID(N\'iotTIS88jkT\'), password) as nvarchar(max))' + 
+				// 								'as pass_dec, user_level FROM Ms_Login WHERE username = \'' + username + '\'' + 
+				// 								') AS TEMP ' + 
+				// 								'WHERE pass_dec = \'' + password + '\''
+
+				let pass_sha256 = CryptoJS.SHA256(password).toString();
+				console.log(pass_sha256);
+
+
+				getData_SQL_Await('SELECT * FROM (SELECT username, password' + 
+												', user_level FROM Ms_Login WHERE username = \'' + username + '\'' + 
 												') AS TEMP ' + 
-												'WHERE pass_dec = \'' + password + '\''
+									'WHERE password = CAST(\'' + pass_sha256 + '\'' + ' ' + ' as VARBINARY)'
 				).then((result)=>{
-						
 							if (typeof result?.[0] == 'undefined' || result?.[0] == null)
 							{
 								func_Return_Response(res, 0, 400, 'Check your Credential');
@@ -161,11 +170,11 @@ child.post('/login', funcMid, async (req, res) => {
 							else{
 
 								// INSERT TO LOG TABLE
-								getData_SQL_Await('INSERT INTO Tbl_Log(timestamp, username, activity) ' + 
-													'VALUES(CURRENT_TIMESTAMP, \'' + username + '\', \'Login\')')
-								.then((result_log)=>{
+								// getData_SQL_Await('INSERT INTO Tbl_Log(timestamp, username, activity) ' + 
+								// 					'VALUES(CURRENT_TIMESTAMP, \'' + username + '\', \'Login\')')
+								// .then((result_log)=>{
 
-									setTimeout(()=>{
+								// 	setTimeout(()=>{
 										res.status(200).send({
 											statusCode: 200,
 											message: 'Data Valid',
@@ -175,8 +184,8 @@ child.post('/login', funcMid, async (req, res) => {
 											company_select: [...company_select_arr],
 											device_id: [...device_id_arr]
 										})
-									},100)
-								})
+								// 	},100)
+								// })
 
 							}
 				})
