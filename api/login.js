@@ -159,7 +159,7 @@ child.post('/login', funcMid, async (req, res) => {
 
 
 				getData_SQL_Await('SELECT * FROM (SELECT username, password' + 
-												', user_level FROM Ms_Login WHERE username = \'' + username + '\'' + 
+												', user_level, active FROM Ms_Login WHERE username = \'' + username + '\'' + 
 												') AS TEMP ' + 
 									'WHERE password = CAST(\'' + pass_sha256 + '\'' + ' ' + ' as VARBINARY)'
 				).then((result)=>{
@@ -169,6 +169,17 @@ child.post('/login', funcMid, async (req, res) => {
 							}
 							else{
 
+								let var_StatusActive = result?.[0]?.['active'];
+
+								if (typeof var_StatusActive != 'undefined' &&
+									var_StatusActive != null){
+
+									if (var_StatusActive == 0){
+										func_Return_Response(res, 0, 400, 'Access is disabled')
+										return
+									}
+								}
+								
 								// INSERT TO LOG TABLE
 								// getData_SQL_Await('INSERT INTO Tbl_Log(timestamp, username, activity) ' + 
 								// 					'VALUES(CURRENT_TIMESTAMP, \'' + username + '\', \'Login\')')

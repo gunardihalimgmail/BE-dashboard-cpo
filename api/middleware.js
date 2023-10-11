@@ -1,8 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 const funcMid = (req, res, next) => {
-    console.log("Middleware Child Company");
-
+    // console.log("Middleware Child Company");
 
     // // === TOKEN IMPLEMENTATION === 
     

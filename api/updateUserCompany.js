@@ -11,10 +11,21 @@ const _ = require("lodash");
 // UPDATE USER COMPANY
 child.post('/usercompany/update', funcMid, async (req, res) => {
 
+        // console.log(req.body?.['active'])
+        // console.log(typeof (req.body?.['active']))
+
+        let active_user = 0;
+        if (typeof req.body?.['active'] == 'string'){
+            active_user = req.body?.['active'].toString().toLowerCase() == "true" ? 1 : 0;
+        }
+        else if (typeof req.body?.['active'] == 'boolean'){
+            active_user = req.body?.['active'] == true ? 1 : 0;
+        }
+
 		let user = req.body?.['user'];      // {}
 		let company = req.body?.['company'];    // []
 		let created_user = req.body?.['created_user'];    // 'admin' user yang update
-
+        
 		res.setHeader('Content-Type','application/json')
 		res.setHeader('Access-Control-Allow-Origin','*')
 
@@ -96,6 +107,13 @@ child.post('/usercompany/update', funcMid, async (req, res) => {
                     
          await getData_SQL_Await('INSERT INTO Tbl_Log(timestamp, username, activity) ' + 
                             'VALUES(CURRENT_TIMESTAMP, \'' + created_user + '\', \'' + activity + '\')')
+        .then((result_log)=>{})
+
+        // UPDATE STATUS ACTIVE USER
+
+        await getData_SQL_Await('UPDATE Ms_Login ' + 
+                                'SET active=' + active_user +
+                                ' WHERE username = \'' + user_value + '\'')
         .then((result_log)=>{})
 
         res.status(200).send({
