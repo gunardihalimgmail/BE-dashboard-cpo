@@ -181,11 +181,11 @@ child.post('/login', funcMid, async (req, res) => {
 								}
 								
 								// INSERT TO LOG TABLE
-								// getData_SQL_Await('INSERT INTO Tbl_Log(timestamp, username, activity) ' + 
-								// 					'VALUES(CURRENT_TIMESTAMP, \'' + username + '\', \'Login\')')
-								// .then((result_log)=>{
+								getData_SQL_Await('INSERT INTO Tbl_Log(timestamp, username, activity) ' + 
+													'VALUES(CURRENT_TIMESTAMP, \'' + username + '\', \'Login\')')
+								.then((result_log)=>{
 
-								// 	setTimeout(()=>{
+									setTimeout(()=>{
 										res.status(200).send({
 											statusCode: 200,
 											message: 'Data Valid',
@@ -195,8 +195,8 @@ child.post('/login', funcMid, async (req, res) => {
 											company_select: [...company_select_arr],
 											device_id: [...device_id_arr]
 										})
-								// 	},100)
-								// })
+									},100)
+								})
 
 							}
 				})
