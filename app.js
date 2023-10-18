@@ -59,6 +59,7 @@ const child_UpdateJenis = require('./api/updateJenis');
 const child_UpdateProfileTangki = require('./api/updateProfileTangki');
 const child_GetProfileTangki = require('./api/getProfileTangki');
 const child_GetStatusActive = require('./api/getStatusActive');	// get status active user
+const child_GetDeviceValidPattern = require('./api/getDeviceValidPattern');	// get status active user
 
 app.use('/', child_login);
 app.use('/', child_Volume);
@@ -71,6 +72,7 @@ app.use('/', child_UpdateJenis);
 app.use('/', child_UpdateProfileTangki);
 app.use('/', child_GetProfileTangki);
 app.use('/', child_GetStatusActive);
+app.use('/', child_GetDeviceValidPattern);
 
 // === end ===
 
