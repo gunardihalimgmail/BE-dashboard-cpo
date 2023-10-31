@@ -223,11 +223,11 @@ child.post('/user/create', funcMid, async (req, res) => {
 						let pass_sha256 = CryptoJS.SHA256(dec_chiper_pass).toString();
 
 						getData_SQL_Await('INSERT INTO Ms_Login(' + 
-									'username, password, user_level, created_date, created_user)' + 
+									'username, password, user_level, created_date, created_user, active)' + 
 									'VALUES(' + 
 									// '\'' + username + '\', ENCRYPTBYASYMKEY(ASYMKEY_ID(\'iotTIS88jkT\'), CAST(\'' + dec_chiper_pass + '\' AS NVARCHAR(MAX))),' +
 									'\'' + username + '\',CAST(\'' + pass_sha256 + '\' as VARBINARY),' +
-									'\'' + dec_chiper_user_level +'\', GETDATE(), \''+ created_user + '\')'
+									'\'' + dec_chiper_user_level +'\', GETDATE(), \''+ created_user + '\', 1)'
 						).then((result)=>{
 
 							// ('abc',1),('def',2)
